@@ -1,4 +1,4 @@
-"""Regression tests for Codex security findings (tools/, cron/, plugins/, cli)."""
+"""Regression tests for Codex security findings in retained runtime code."""
 
 from __future__ import annotations
 
@@ -309,7 +309,12 @@ class TtsOutputPathTest(unittest.TestCase):
 
 class OpenVikingHeadersTest(unittest.TestCase):
     def test_default_tenant_headers_omitted(self) -> None:
-        from plugins.memory.openviking import _VikingClient
+        try:
+            from plugins.memory.openviking import _VikingClient
+        except ModuleNotFoundError:
+            root = Path(__file__).resolve().parents[1]
+            self.assertFalse((root / "plugins").exists())
+            return
 
         client = _VikingClient("http://127.0.0.1:1933", account="default", user="default")
         headers = client._headers()

@@ -1,4 +1,4 @@
-"""Product-facing runtime catalog for restored Hermes tools and plugins."""
+"""Product-facing runtime catalog for restored Hermes runtime support."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ RUNTIME_GROUPS: dict[str, str] = {
     "cron": "Scheduled/background build loops for 24/7 project improvement.",
     "providers": "Provider abstractions for model/account routing.",
     "hermes_cli": "CLI support layer for setup, skills, tools, profiles, gateway, and jobs.",
-    "plugins": "Optional plugin backends including memory providers, Kanban dashboard, and platform adapters.",
 }
 
 
@@ -70,7 +69,7 @@ def runtime_catalog() -> dict[str, Any]:
     ]
     return {
         "ok": True,
-        "policy": "Restored Hermes runtime is available to Playro through product-facing allowlists, not hidden as inert background files.",
+        "policy": "Restored Hermes runtime support is available to Playro through product-facing allowlists; inherited plugin backends are not shipped in the public tree.",
         "groups": groups,
         "root_runtime_files": [
             {"path": file, "available": (root / file).exists()} for file in root_files

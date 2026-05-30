@@ -17,12 +17,12 @@ providers/
 └── README.md       This file
 ```
 
-The **profiles themselves** live as plugins under
-`plugins/model-providers/<name>/` (bundled in this repo) and
-`$HERMES_HOME/plugins/model-providers/<name>/` (per-user overrides). The
-registry in `providers/__init__.py` lazily discovers them the first time any
-consumer calls `get_provider_profile()` or `list_providers()`. See
-`plugins/model-providers/README.md` for the plugin contract and examples.
+The public Playro tree does not bundle inherited provider-plugin profiles.
+Private or local Hermes installs can still provide profiles under
+`$HERMES_HOME/plugins/model-providers/<name>/`; future public profiles should be
+added only after Playro product-scope and redistribution review. The registry in
+`providers/__init__.py` lazily discovers available profiles the first time any
+consumer calls `get_provider_profile()` or `list_providers()`.
 
 ---
 
@@ -56,8 +56,8 @@ layer reads from it:
 
 ## Adding a provider
 
-See `plugins/model-providers/README.md` — drop a new directory there (or
-under `$HERMES_HOME/plugins/model-providers/` for a private plugin).
+Add a reviewed product-scoped profile to the repository, or keep private/local
+profiles under `$HERMES_HOME/plugins/model-providers/`.
 
 ---
 

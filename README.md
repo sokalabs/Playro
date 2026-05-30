@@ -34,7 +34,7 @@ product/roblox_ai_studio/              Roblox builder backend, generator, app te
 product/roblox_ai_studio/desktop/      Electron desktop app and packaging scripts
 product/playro_marketing_site/         Marketing site prototype
 scripts/verify-playro-desktop-server.sh  Server-side verification workflow
-agent/, tools/, gateway/, plugins/      Source-based Hermes runtime foundation retained for backend work
+agent/, tools/, gateway/, hermes_cli/   Source-based Hermes runtime support behind Playro boundaries
 ```
 
 ## Requirements
@@ -42,10 +42,10 @@ agent/, tools/, gateway/, plugins/      Source-based Hermes runtime foundation r
 - Python 3.11+
 - Node.js 20+
 - npm
-- [Rojo](https://rojo.space/) (Required for syncing generated files into Roblox Studio)
+- [Rojo](https://rojo.space/) (optional for generation; required only when syncing generated files into Roblox Studio)
 - [Roblox Studio](https://create.roblox.com/)
 
-The repository does not vendor Python, Rojo, Electron packages, or generated desktop builds. Install those tools locally through their normal package managers or installers.
+The repository does not vendor Python, Rojo, Electron packages, inherited Hermes plugin backends, or generated desktop builds. Install runtime tools locally through their normal package managers or installers.
 
 ## Quick start: desktop app
 

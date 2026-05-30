@@ -1,7 +1,7 @@
 {
-  "generated": "2026-05-22",
+  "generated": "2026-05-30",
   "archive_ref": "origin/archive/old-hermes-full-20260520-114549",
-  "policy": "Keep the Playro product surface and source-based Hermes runtime support, but do not ship inherited skill packs or vendored binary runtimes in the public repository. Archive unrelated or risky generic Hermes surfaces and treat generated artifacts separately from source retention.",
+  "policy": "Keep the Playro product surface and source-based Hermes runtime support, but do not ship inherited skill packs, inherited plugin backends, or vendored binary runtimes in the public repository. Archive unrelated or risky generic Hermes surfaces and treat generated artifacts separately from source retention.",
   "buckets": {
     "active": "Required for the default Playro desktop/backend experience or repeatable verification path.",
     "optional": "Source-based runtime support kept in repo but hidden, disabled, or gated by settings/project type until a Roblox creator workflow needs it.",
@@ -22,7 +22,6 @@
     "gateway",
     "cron",
     "providers",
-    "plugins",
     "tools",
     "agent",
     "hermes_cli"
@@ -85,8 +84,8 @@
     },
     {
       "pattern": "plugins/**",
-      "bucket": "optional",
-      "reason": "Plugin backends may support memory, provider, asset, orchestration, and future Roblox adapters when gated."
+      "bucket": "archive_only",
+      "reason": "Inherited Hermes plugin backends are not shipped in the public Playro repository until individually license-reviewed and product-scoped."
     },
     {
       "pattern": "skills/**",

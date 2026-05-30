@@ -1,21 +1,19 @@
 """Provider module registry.
 
-Provider profiles can live in two places:
+Provider profiles can live in these places:
 
-1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with hermes-agent)
-2. Enabled user plugins: ``$HERMES_HOME/plugins/model-providers/<name>/``
+1. Enabled user plugins: ``$HERMES_HOME/plugins/model-providers/<name>/``
+2. Future reviewed repo profiles, if Playro intentionally adds them
 
 Each plugin directory contains:
   - ``__init__.py`` — calls ``register_provider(profile)`` at import
   - ``plugin.yaml`` — manifest (name, kind: model-provider, version, description)
 
 Discovery is lazy: the first call to ``get_provider_profile()`` or
-``list_providers()`` scans both locations. Bundled plugins are imported
-automatically; user plugins are imported only when their ``plugin.yaml``
-declares ``kind: model-provider`` and the plugin is allowed by
-``plugins.enabled``/``plugins.disabled``. Enabled user plugins override
-bundled plugins on name collision (last-writer-wins), so third parties can
-monkey-patch or replace any built-in profile without editing the repo.
+``list_providers()`` scans available locations. Public Playro releases do not
+bundle inherited provider plugins. User plugins are imported only when their
+``plugin.yaml`` declares ``kind: model-provider`` and the plugin is allowed by
+``plugins.enabled``/``plugins.disabled``.
 
 For backward compatibility, ``providers/*.py`` files (other than ``base.py``
 and ``__init__.py``) are still discovered via ``pkgutil.iter_modules``.
@@ -46,7 +44,8 @@ _REGISTRY: dict[str, ProviderProfile] = {}
 _ALIASES: dict[str, str] = {}
 _discovered = False
 
-# Repo-root ``plugins/model-providers/`` — populated at discovery time.
+# Optional repo-root ``plugins/model-providers/`` if future Playro-reviewed
+# profiles are added.
 _BUNDLED_PLUGINS_DIR = (
     Path(__file__).resolve().parent.parent / "plugins" / "model-providers"
 )
@@ -55,9 +54,9 @@ _BUNDLED_PLUGINS_DIR = (
 def register_provider(profile: ProviderProfile) -> None:
     """Register a provider profile by name and aliases.
 
-    Later registrations with the same name replace earlier ones — so user
+    Later registrations with the same name replace earlier ones, so user
     plugins under ``$HERMES_HOME/plugins/model-providers/`` can override
-    bundled profiles without editing repo code.
+    reviewed repo profiles without editing repo code.
     """
     _REGISTRY[profile.name] = profile
     for alias in profile.aliases:
@@ -271,7 +270,7 @@ def _import_plugin_dir(plugin_dir: Path, source: str) -> None:
     if not init_file.exists():
         return
 
-    # Give bundled plugins a stable import path (``plugins.model_providers.<name>``)
+    # Give repo plugins a stable import path (``plugins.model_providers.<name>``)
     # so relative imports within the plugin work. User plugins load via
     # ``importlib.util.spec_from_file_location`` with a unique module name so
     # multiple HERMES_HOME profiles don't alias each other.
@@ -304,7 +303,7 @@ def _discover_providers() -> None:
     """Populate the registry by importing every provider plugin.
 
     Order:
-      1. Bundled plugins at ``<repo>/plugins/model-providers/<name>/``
+      1. Reviewed repo plugins at ``<repo>/plugins/model-providers/<name>/``
       2. User plugins at ``$HERMES_HOME/plugins/model-providers/<name>/``
       3. Legacy per-file modules at ``providers/<name>.py`` (back-compat)
 
@@ -316,7 +315,7 @@ def _discover_providers() -> None:
         return
     _discovered = True
 
-    # 1. Bundled plugins — shipped with hermes-agent.
+    # 1. Reviewed repo plugins, if the public tree intentionally adds any.
     if _BUNDLED_PLUGINS_DIR.is_dir():
         for child in sorted(_BUNDLED_PLUGINS_DIR.iterdir()):
             if not child.is_dir() or child.name.startswith(("_", ".")):
@@ -324,7 +323,7 @@ def _discover_providers() -> None:
             _import_plugin_dir(child, "bundled")
 
     # 2. User plugins — under $HERMES_HOME/plugins/model-providers/<name>/.
-    #    These can override any bundled profile of the same name (last-writer-wins
+    #    These can override any reviewed repo profile of the same name (last-writer-wins
     #    in register_provider()).
     user_dir = _user_plugins_dir()
     if user_dir is not None:

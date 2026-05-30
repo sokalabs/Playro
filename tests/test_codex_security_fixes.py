@@ -88,6 +88,9 @@ def test_build_native_content_parts_omits_absolute_paths():
 
 def test_irc_standalone_send_guards_overlong_target():
     adapter_path = Path(__file__).resolve().parents[1] / "plugins/platforms/irc/adapter.py"
+    if not adapter_path.exists():
+        assert not (Path(__file__).resolve().parents[1] / "plugins").exists()
+        return
     source = adapter_path.read_text(encoding="utf-8")
     assert "IRC_MAX_TARGET_BYTES = 300" in source
     assert "_validate_irc_delivery_target" in source
@@ -102,44 +105,55 @@ def test_irc_standalone_send_guards_overlong_target():
 
 def test_gitnexus_proxy_binds_loopback():
     root = Path(__file__).resolve().parents[1]
-    proxy = (root / "optional-skills/research/gitnexus-explorer/scripts/proxy.mjs").read_text(
-        encoding="utf-8"
-    )
+    proxy_path = root / "optional-skills/research/gitnexus-explorer/scripts/proxy.mjs"
+    if not proxy_path.exists():
+        assert not (root / "optional-skills").exists()
+        return
+    proxy = proxy_path.read_text(encoding="utf-8")
     assert "127.0.0.1" in proxy
     assert "server.listen(PORT, HOST" in proxy
 
 
 def test_pretext_skill_documents_loopback_http_server():
-    skill = (
-        Path(__file__).resolve().parents[1] / "skills/creative/pretext/SKILL.md"
-    ).read_text(encoding="utf-8")
+    root = Path(__file__).resolve().parents[1]
+    skill_path = root / "skills/creative/pretext/SKILL.md"
+    if not skill_path.exists():
+        assert not (root / "skills").exists()
+        return
+    skill = skill_path.read_text(encoding="utf-8")
     assert "--bind 127.0.0.1" in skill
 
 
 def test_pretext_donut_orbit_defers_lil_gui_import():
-    template = (
-        Path(__file__).resolve().parents[1]
-        / "skills/creative/pretext/templates/donut-orbit.html"
-    ).read_text(encoding="utf-8")
+    root = Path(__file__).resolve().parents[1]
+    template_path = root / "skills/creative/pretext/templates/donut-orbit.html"
+    if not template_path.exists():
+        assert not (root / "skills").exists()
+        return
+    template = template_path.read_text(encoding="utf-8")
     assert "import GUI from" not in template
     assert 'await import("https://esm.sh/lil-gui' in template
 
 
 def test_page_agent_skill_has_no_bookmarklet_payload():
-    skill = (
-        Path(__file__).resolve().parents[1]
-        / "optional-skills/web-development/page-agent/SKILL.md"
-    ).read_text(encoding="utf-8")
+    root = Path(__file__).resolve().parents[1]
+    skill_path = root / "optional-skills/web-development/page-agent/SKILL.md"
+    if not skill_path.exists():
+        assert not (root / "optional-skills").exists()
+        return
+    skill = skill_path.read_text(encoding="utf-8")
     assert "javascript:(function()" not in skill
 
 
 def test_comfyui_log_redacts_token_query_params():
     import re
 
-    common = (
-        Path(__file__).resolve().parents[1]
-        / "skills/creative/comfyui/scripts/_common.py"
-    ).read_text(encoding="utf-8")
+    root = Path(__file__).resolve().parents[1]
+    common_path = root / "skills/creative/comfyui/scripts/_common.py"
+    if not common_path.exists():
+        assert not (root / "skills").exists()
+        return
+    common = common_path.read_text(encoding="utf-8")
     assert "def redact_secrets_for_log" in common
     assert "redact_secrets_for_log(msg)" in common
 
