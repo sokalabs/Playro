@@ -340,14 +340,19 @@ function startRemoteHermesInstall(hermesHome) {
   let command;
   let args;
   if (process.platform === 'win32') {
-    // Mirror installRojoWithPackageManager(): drive the official installer via a
-    // non-interactive PowerShell command. The installer URL is pinned above.
+    // Drive the official installer via a non-interactive PowerShell command
+    // (mirrors installRojoWithPackageManager). The installer URL is pinned above.
     //
-    // The official Hermes installer is a bash script, so on bare-metal Windows we
-    // first bootstrap Git for Windows (which ships bash) silently via winget — the
-    // same trusted-package-manager pattern Playro already uses for Rojo. The
-    // bootstrap is skipped when bash is already on PATH. The whole command runs in
-    // the windowsHide spawn below, so it never surfaces a console window.
+    // The official Hermes installer is a bash script. On Windows it MUST run under
+    // Git Bash (MSYS), never WSL: `Get-Command bash` resolves to the WSL bash.exe
+    // app-execution alias on any machine that has WSL installed, which would run
+    // the Linux installer inside WSL with an untranslatable Windows HERMES_HOME and
+    // produce a Linux venv the Windows app can never locate. So we resolve Git Bash
+    // explicitly from its known install locations and bootstrap Git for Windows
+    // silently via winget (the same trusted-package-manager pattern Playro uses for
+    // Rojo) only when Git Bash is absent. HERMES_HOME is passed in a Git Bash
+    // friendly forward-slash form. The whole command runs in the windowsHide spawn
+    // below, so it never surfaces a console window.
     const wingetExe = resolveWingetExecutable();
     const wingetRef = wingetExe ? JSON.stringify(wingetExe) : `'winget'`;
     const gitBashCandidates = [
@@ -355,16 +360,18 @@ function startRemoteHermesInstall(hermesHome) {
       '"${env:ProgramFiles(x86)}\\Git\\bin\\bash.exe"',
       '"$env:LOCALAPPDATA\\Programs\\Git\\bin\\bash.exe"'
     ].join(', ');
-    const gitBootstrap = `if (-not $bash) { Write-Output 'Bootstrapping Git for Windows (provides bash) with Windows Package Manager...'; & ${wingetRef} install --id Git.Git --exact --silent --accept-package-agreements --accept-source-agreements; $bash = @(${gitBashCandidates}) | Where-Object { Test-Path $_ } | Select-Object -First 1 }`;
+    const resolveGitBash = `@(${gitBashCandidates}) | Where-Object { Test-Path $_ } | Select-Object -First 1`;
+    const hermesHomeMsys = hermesHome.replace(/\\/g, '/');
     const script = [
       `$ErrorActionPreference = 'Stop'`,
-      `$env:HERMES_HOME = ${JSON.stringify(hermesHome)}`,
-      `$bash = (Get-Command bash -ErrorAction SilentlyContinue).Source`,
-      gitBootstrap,
-      `if (-not $bash) { $bash = 'bash' }`,
+      `$gitBash = ${resolveGitBash}`,
+      `if (-not $gitBash) { Write-Output 'Bootstrapping Git for Windows (provides bash) with Windows Package Manager...'; & ${wingetRef} install --id Git.Git --exact --silent --accept-package-agreements --accept-source-agreements; $gitBash = ${resolveGitBash} }`,
+      `if (-not $gitBash) { throw 'Git Bash was not found and could not be installed; cannot run the official Playro AI engine installer on Windows.' }`,
+      `Write-Output ('Using Git Bash: ' + $gitBash)`,
+      `$env:HERMES_HOME = ${JSON.stringify(hermesHomeMsys)}`,
       `Write-Output 'Installing the official Playro AI engine...'`,
       `$installer = (Invoke-WebRequest -UseBasicParsing -Uri ${JSON.stringify(OFFICIAL_HERMES_INSTALL_URL)}).Content`,
-      `$installer | & $bash -s --`,
+      `$installer | & $gitBash -s --`,
       `Write-Output 'Playro AI engine install complete.'`
     ].join('; ');
     command = 'powershell.exe';
