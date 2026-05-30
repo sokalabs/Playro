@@ -2,6 +2,10 @@
 Hermes Plugin System
 ====================
 
+The public Playro source tree normally ships without inherited bundled
+plugins. This loader still supports reviewed repository plugins, packaged
+Hermes distributions, and user/project plugins.
+
 Discovers, loads, and manages plugins from four sources:
 
 1. **Bundled plugins** – ``<repo>/plugins/<name>/`` (shipped with hermes-agent;
@@ -14,7 +18,7 @@ Discovers, loads, and manages plugins from four sources:
    entry-point group.
 
 Later sources override earlier ones on name collision, so a user or project
-plugin with the same name as a bundled plugin replaces it.
+plugin with the same name as a bundled/reviewed plugin replaces it.
 
 Each directory plugin must contain a ``plugin.yaml`` manifest **and** an
 ``__init__.py`` with a ``register(ctx)`` function.
@@ -53,7 +57,7 @@ from hermes_cli.config import cfg_get
 
 
 def get_bundled_plugins_dir() -> Path:
-    """Locate the bundled ``plugins/`` directory.
+    """Locate the optional bundled/reviewed ``plugins/`` directory.
 
     Honours ``HERMES_BUNDLED_PLUGINS`` (set by the Nix wrapper / packaged
     installs) so read-only store paths are consulted first.  Falls back to

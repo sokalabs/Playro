@@ -7,9 +7,9 @@ instances via ``PluginContext.register_image_gen_provider()``; the active one
 (selected via ``image_gen.provider`` in ``config.yaml``) services every
 ``image_generate`` tool call.
 
-Providers live in ``<repo>/plugins/image_gen/<name>/`` (built-in, auto-loaded
-as ``kind: backend``) or ``~/.hermes/plugins/image_gen/<name>/`` (user, opt-in
-via ``plugins.enabled``).
+Providers can live in a reviewed repository plugin directory at
+``<repo>/plugins/image_gen/<name>/`` or in
+``~/.hermes/plugins/image_gen/<name>/`` (user, opt-in via ``plugins.enabled``).
 
 Response shape
 --------------

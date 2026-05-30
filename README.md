@@ -47,6 +47,8 @@ agent/, tools/, gateway/, hermes_cli/   Source-based Hermes runtime support behi
 
 The repository does not vendor Python, Rojo, Electron packages, inherited Hermes plugin backends, or generated desktop builds. Install runtime tools locally through their normal package managers or installers.
 
+The retained Hermes runtime support contains optional connector and tool configuration hooks for local developer setups. Those hooks are not part of the default Playro product flow and require user-supplied credentials/configuration when used.
+
 ## Quick start: desktop app
 
 ```bash

@@ -156,7 +156,7 @@ class Platform(Enum):
 
     @classmethod
     def _scan_bundled_plugin_platforms(cls) -> set:
-        """Return names of bundled platform plugins under ``plugins/platforms/``."""
+        """Return names of reviewed platform plugins under ``plugins/platforms/``."""
         names: set = set()
         try:
             platforms_dir = Path(__file__).parent.parent / "plugins" / "platforms"

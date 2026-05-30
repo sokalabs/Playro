@@ -4,9 +4,10 @@ There are two ways to add a platform to the Hermes gateway:
 
 ## Plugin Path (Recommended for Community/Third-Party)
 
-Create a plugin directory in `~/.hermes/plugins/` (or under `plugins/platforms/`
-for bundled plugins) with a `plugin.yaml` and `adapter.py`.  The adapter
-inherits from `BasePlatformAdapter` and registers via
+Create a plugin directory in `~/.hermes/plugins/` for local/user plugins. A
+future public Playro repository plugin may live under `plugins/platforms/` only
+after product-scope and redistribution review. The adapter inherits from
+`BasePlatformAdapter` and registers via
 `ctx.register_platform()` in the `register(ctx)` entry point.  This requires
 **zero changes to core Hermes code**.
 
@@ -33,9 +34,7 @@ status display, gateway setup, and more.
   auto-populate `OPTIONAL_ENV_VARS` in `hermes_cli/config.py` so the setup
   wizard surfaces proper descriptions, prompts, password flags, and URLs.
 
-See `plugins/platforms/irc/`, `plugins/platforms/teams/`, and
-`plugins/platforms/google_chat/` for complete working examples, and
-`website/docs/developer-guide/adding-platform-adapters.md` for the full
+See `website/docs/developer-guide/adding-platform-adapters.md` for the full
 plugin guide with code examples and hook documentation.
 
 ---
