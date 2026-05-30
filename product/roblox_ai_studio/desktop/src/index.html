@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content-Security-Policy. The renderer is locked down to:
+        - scripts only from this packaged dir (no eval, no inline)
+        - styles from this dir; `unsafe-inline` is required for the two
+          progress-bar `style="width:NN%"` attributes in renderer.js
+        - images/fonts from this dir + data: + blob: (for screenshots)
+        - network only to the local Hermes backend on 127.0.0.1/localhost:8765
+        - no plugins, no <object>, no nested-frame embedding
+      Tighten further only after the inline progress styles are migrated
+      to CSS custom properties.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:8765 http://localhost:8765; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none';"
+    />
+    <title>Playro</title>
+    <link rel="icon" href="../assets/playro-mascot-tiny.png" />
+    <link rel="apple-touch-icon" href="../assets/playro-app-icon.png" />
+    <meta property="og:image" content="../assets/playro-app-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="./playro-artifacts.js"></script>
+    <script src="./api-client.js"></script>
+    <script src="./panel-state.js"></script>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

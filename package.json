@@ -1,0 +1,23 @@
+{
+  "name": "playro-workspace",
+  "version": "1.0.3",
+  "description": "Playro workspace: desktop-first Roblox game builder on a product-local Hermes backend foundation.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "check": "npm --prefix product/roblox_ai_studio/desktop run check",
+    "smoke:static": "npm --prefix product/roblox_ai_studio/desktop run smoke:static",
+    "verify:server": "scripts/verify-playro-desktop-server.sh",
+    "test:python": "python3 -m pytest product/roblox_ai_studio/tests product/roblox_ai_studio/app/test_security_controls.py -q"
+  },
+  "workspaces": [
+    "product/roblox_ai_studio/desktop",
+    "product/playro_marketing_site"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "overrides": {
+    "ws": "^8.20.1"
+  }
+}

@@ -1,0 +1,210 @@
+name: Playro Release Gate
+
+on:
+  push:
+    branches: [main, hermes/main]
+    paths:
+      - "product/roblox_ai_studio/**"
+      - "scripts/verify-playro-desktop-server.sh"
+      - ".github/workflows/playro-release-gate.yml"
+  workflow_dispatch:
+    inputs:
+      build_windows:
+        description: "Build Windows installer/portable artifacts"
+        required: false
+        type: boolean
+        default: false
+      run_linux_gate:
+        description: "Run Linux verification gate before packaging"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: playro-release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  linux-product-static-gate:
+    name: Linux product/static gate
+    if: ${{ github.event.inputs.run_linux_gate != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: product/roblox_ai_studio/desktop/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Install desktop dependencies
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm ci
+
+      - name: Run one-command desktop/server verification
+        run: scripts/verify-playro-desktop-server.sh
+        env:
+          PLAYRO_USE_HERMES_AGENT: "0"
+          PLAYRO_API_TOKEN: ci-local-token
+          PLAYRO_ALLOWED_ORIGINS: app://playro,http://127.0.0.1:8765
+
+      - name: npm audit
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm audit --json
+
+  windows-unsigned-beta-build:
+    name: Windows unsigned beta build
+    if: ${{ always() && github.event.inputs.build_windows == 'true' && (needs.linux-product-static-gate.result == 'success' || needs.linux-product-static-gate.result == 'skipped') }}
+    needs: [linux-product-static-gate]
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: product/roblox_ai_studio/desktop/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: python -m pip install --upgrade pytest
+
+      - name: Install desktop dependencies
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm ci
+
+      - name: Desktop checks on Windows
+        working-directory: product/roblox_ai_studio/desktop
+        run: |
+          npm run check
+          npm run smoke:static
+
+      - name: Backend security tests on Windows
+        run: python -m unittest product.roblox_ai_studio.app.test_security_controls
+        env:
+          PLAYRO_USE_HERMES_AGENT: "0"
+
+      - name: CLI smoke on Windows
+        run: >-
+          python -m product.roblox_ai_studio.app.cli
+          "make a colorful Roblox obby"
+          --output-root "$env:RUNNER_TEMP/playro-cli-smoke"
+          --smoke
+          --json
+        env:
+          PLAYRO_USE_HERMES_AGENT: "0"
+
+      - name: Build unsigned NSIS installer
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm run build:win-nsis:unsigned
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAYRO_RELEASE_CHANNEL: beta
+          PLAYRO_RELEASE_TAG: desktop-v1.0.4-beta
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Build unsigned portable EXE
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm run build:win-portable:unsigned
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAYRO_RELEASE_CHANNEL: beta
+          PLAYRO_RELEASE_TAG: desktop-v1.0.4-beta
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify packaged layout
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm run verify:packaged
+
+      - name: Generate release manifest
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm run release:manifest
+        env:
+          PLAYRO_RELEASE_CHANNEL: beta
+          PLAYRO_RELEASE_TAG: desktop-v1.0.4-beta
+
+      - name: Generate release notes
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm run release:notes
+        env:
+          PLAYRO_RELEASE_CHANNEL: beta
+          PLAYRO_RELEASE_TAG: desktop-v1.0.4-beta
+
+      - name: Sell-readiness check
+        working-directory: product/roblox_ai_studio/desktop
+        run: npm run release:sell-check
+        env:
+          PLAYRO_RELEASE_CHANNEL: beta
+          PLAYRO_RELEASE_TAG: desktop-v1.0.4-beta
+
+      - name: Upload beta artifacts to release
+        working-directory: product/roblox_ai_studio/desktop
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:PLAYRO_RELEASE_TAG
+          $release = gh api "repos/${{ github.repository }}/releases/tags/$tag" | ConvertFrom-Json
+          $assets = @(
+            'dist/Playro Setup 1.0.4.exe',
+            'dist/Playro Setup 1.0.4.exe.blockmap',
+            'dist/Playro 1.0.4.exe',
+            'dist/release-manifest-v1.0.4.json',
+            'dist/release-manifest-v1.0.4.md'
+          )
+          foreach ($asset in $assets) {
+            if (!(Test-Path $asset)) {
+              throw "Missing release asset: $asset"
+            }
+            $name = Split-Path $asset -Leaf
+            $existing = @($release.assets | Where-Object { $_.name -eq $name })
+            foreach ($item in $existing) {
+              gh api --method DELETE "repos/${{ github.repository }}/releases/assets/$($item.id)"
+            }
+            gh release upload $tag $asset --clobber
+          }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAYRO_RELEASE_TAG: desktop-v1.0.4-beta
+
+      - name: Upload beta artifacts and logs
+        uses: actions/upload-artifact@v7.0.1
+        continue-on-error: true
+        with:
+          name: Playro-Windows-Unsigned-Beta
+          path: |
+            product/roblox_ai_studio/desktop/dist/**/*.exe
+            product/roblox_ai_studio/desktop/dist/**/*.yml
+            product/roblox_ai_studio/desktop/dist/**/*.yaml
+            product/roblox_ai_studio/desktop/dist/**/*.json
+            product/roblox_ai_studio/desktop/dist/**/*.blockmap
+          if-no-files-found: error
+          retention-days: 1

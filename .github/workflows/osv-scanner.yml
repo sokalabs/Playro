@@ -1,0 +1,117 @@
+name: OSV-Scanner
+
+# Detection-only dependency vulnerability scan.
+#
+# This workflow intentionally does not upload SARIF to GitHub code scanning:
+# sokalabs/Hermes-Roblox does not currently have code scanning enabled, and
+# upload-sarif turns a successful detection report into a failing Actions run.
+# Results are preserved as artifacts and step summaries instead, while repair
+# work can continue on normal PR branches.
+#
+# This is detection-only — OSV-Scanner does NOT open PRs or modify pins.
+# It reports known CVEs in currently-pinned dependency versions so we can
+# decide when and how to patch on our own schedule. Our pinning strategy
+# (full SHA / exact version) is preserved; only the notification signal
+# is added.
+#
+# Complements supply-chain-audit.yml by covering the orthogonal
+# "currently-pinned dep became known-vulnerable" case.
+
+on:
+  push:
+    branches: [main, hermes/main]
+    paths:
+      - 'uv.lock'
+      - 'pyproject.toml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'ui-tui/package.json'
+      - 'ui-tui/package-lock.json'
+      - 'ui-tui/packages/hermes-ink/package.json'
+      - 'ui-tui/packages/hermes-ink/package-lock.json'
+      - 'web/package.json'
+      - 'web/package-lock.json'
+      - 'website/package.json'
+      - 'website/package-lock.json'
+      - 'scripts/whatsapp-bridge/package.json'
+      - 'scripts/whatsapp-bridge/package-lock.json'
+      - 'product/playro_marketing_site/package.json'
+      - 'product/playro_marketing_site/package-lock.json'
+      - 'product/roblox_ai_studio/desktop/package.json'
+      - 'product/roblox_ai_studio/desktop/package-lock.json'
+      - '.github/workflows/osv-scanner.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+  pull_request:
+    branches: [main, hermes/main]
+    paths:
+      - 'uv.lock'
+      - 'pyproject.toml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'ui-tui/package.json'
+      - 'ui-tui/package-lock.json'
+      - 'ui-tui/packages/hermes-ink/package.json'
+      - 'ui-tui/packages/hermes-ink/package-lock.json'
+      - 'web/package.json'
+      - 'web/package-lock.json'
+      - 'website/package.json'
+      - 'website/package-lock.json'
+      - 'scripts/whatsapp-bridge/package.json'
+      - 'scripts/whatsapp-bridge/package-lock.json'
+      - 'product/playro_marketing_site/package.json'
+      - 'product/playro_marketing_site/package-lock.json'
+      - 'product/roblox_ai_studio/desktop/package.json'
+      - 'product/roblox_ai_studio/desktop/package-lock.json'
+      - '.github/workflows/osv-scanner.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  scan:
+    name: Scan lockfiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run OSV scanner
+        id: osv
+        uses: google/osv-scanner-action/osv-scanner-action@7222d1c7ee4f96d71d883e0d3c603f1e1705eca9 # v2.3.5
+        continue-on-error: true
+        with:
+          scan-args: |-
+            --output-file=results.json
+            --format=json
+            --lockfile=uv.lock
+            --lockfile=package-lock.json
+            --lockfile=ui-tui/package-lock.json
+            --lockfile=ui-tui/packages/hermes-ink/package-lock.json
+            --lockfile=web/package-lock.json
+            --lockfile=website/package-lock.json
+            --lockfile=scripts/whatsapp-bridge/package-lock.json
+            --lockfile=product/playro_marketing_site/package-lock.json
+            --lockfile=product/roblox_ai_studio/desktop/package-lock.json
+
+      - name: Upload OSV JSON artifact
+        uses: actions/upload-artifact@v7.0.1
+        continue-on-error: true
+        with:
+          name: osv-results-json
+          path: results.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Summarize scan result
+        shell: bash
+        run: |
+          echo '## OSV dependency scan' >> "$GITHUB_STEP_SUMMARY"
+          if [[ -s results.json ]]; then
+            python3 -c 'import json,pathlib; data=json.loads(pathlib.Path("results.json").read_text()); packages=[pkg for result in data.get("results",[]) for pkg in result.get("packages",[]) if pkg.get("vulnerabilities")]; package_names={(pkg.get("package") or {}).get("name","unknown") for pkg in packages}; vulnerability_count=sum(len(pkg.get("vulnerabilities") or []) for pkg in packages); print(f"- Vulnerabilities detected: {vulnerability_count}"); print(f"- Packages affected: {len(package_names)}"); print("- Full JSON report uploaded as artifact osv-results-json.")' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '- No OSV JSON report was produced.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '- This workflow is detection-only and does not fail the build on known vulnerabilities.' >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,133 @@
+{
+  "appId": "com.sokalabs.playro",
+  "productName": "Playro",
+  "copyright": "Copyright \u00a9 2026 SokaLabs",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "package.json",
+    "src/**/*",
+    "assets/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "../package_markers/product_init.py",
+      "to": "backend/product/__init__.py"
+    },
+    {
+      "from": "../package_markers/roblox_ai_studio_init.py",
+      "to": "backend/product/roblox_ai_studio/__init__.py"
+    },
+    {
+      "from": "../roblox",
+      "to": "backend/product/roblox_ai_studio/roblox",
+      "filter": [
+        "**/*.py",
+        "**/*.json",
+        "**/*.md"
+      ]
+    },
+    {
+      "from": "../app",
+      "to": "backend/product/roblox_ai_studio/app",
+      "filter": [
+        "**/*.py",
+        "**/*.json",
+        "**/*.md"
+      ]
+    },
+    {
+      "from": "../hermes_backend",
+      "to": "backend/product/roblox_ai_studio/hermes_backend",
+      "filter": [
+        "**/*.py",
+        "**/*.json",
+        "**/*.md"
+      ]
+    },
+    {
+      "from": "../build_loop.py",
+      "to": "backend/product/roblox_ai_studio/build_loop.py"
+    },
+    {
+      "from": "vendor/python-win-x64",
+      "to": "python"
+    },
+    {
+      "from": "vendor/playro-engine",
+      "to": "playro-engine"
+    },
+    {
+      "from": "vendor/rojo-win-x64",
+      "to": "rojo"
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
+        "target": "portable",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "assets/icon.ico",
+    "legalTrademarks": "SokaLabs",
+    "signAndEditExecutable": true,
+    "verifyUpdateCodeSignature": true,
+    "requestedExecutionLevel": "asInvoker"
+  },
+  "appx": {
+    "applicationId": "Playro",
+    "identityName": "SokaLabs.Playro",
+    "displayName": "Playro",
+    "publisherDisplayName": "SokaLabs",
+    "backgroundColor": "#0d1220",
+    "languages": [
+      "en-US"
+    ],
+    "showNameOnTiles": true,
+    "setBuildNumber": true,
+    "artifactName": "Playro.Store.${version}.${arch}.${ext}",
+    "capabilities": [
+      "runFullTrust",
+      "internetClient",
+      "privateNetworkClientServer"
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Playro"
+  },
+  "mac": {
+    "target": [
+      "dmg"
+    ],
+    "icon": "assets/icon.icns",
+    "category": "public.app-category.games",
+    "hardenedRuntime": true
+  },
+  "linux": {
+    "target": [
+      "AppImage"
+    ],
+    "icon": "assets/icon.png",
+    "category": "Game;Development;IDE",
+    "maintainer": "SokaLabs <sokabusiness@sokatech.xyz>",
+    "synopsis": "Playro is an AI-powered Roblox game builder"
+  },
+  "publish": null,
+  "asar": false
+}

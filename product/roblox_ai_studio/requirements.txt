@@ -1,0 +1,2 @@
+# Playro product-local backend currently uses only Python standard-library modules.
+# Keep this file so CI/package setup has an explicit dependency manifest.

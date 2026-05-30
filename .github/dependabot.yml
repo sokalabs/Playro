@@ -1,0 +1,48 @@
+# Dependabot configuration for Playro.
+# Keep this repo focused on product dependencies: GitHub Actions and the two npm package roots.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/product/roblox_ai_studio/desktop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "desktop"
+    commit-message:
+      prefix: "chore(desktop-deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/product/playro_marketing_site"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "marketing"
+    commit-message:
+      prefix: "chore(marketing-deps)"
+      include: "scope"

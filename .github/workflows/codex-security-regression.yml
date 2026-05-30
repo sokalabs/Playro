@@ -1,0 +1,70 @@
+name: Codex Security Regression
+
+on:
+  push:
+    branches: [main, hermes/main]
+    paths:
+      - 'gateway/**'
+      - 'tools/**'
+      - 'hermes_cli/**'
+      - 'agent/**'
+      - 'cron/**'
+      - 'run_agent.py'
+      - 'utils.py'
+      - 'cli.py'
+      - 'plugins/**'
+      - 'product/roblox_ai_studio/**'
+      - 'optional-skills/**'
+      - 'tests/test_codex_security_*.py'
+      - 'tests/gateway/platforms/test_*security*.py'
+      - '.github/workflows/codex-security-regression.yml'
+  pull_request:
+    branches: [main, hermes/main]
+    paths:
+      - 'gateway/**'
+      - 'tools/**'
+      - 'hermes_cli/**'
+      - 'agent/**'
+      - 'cron/**'
+      - 'run_agent.py'
+      - 'utils.py'
+      - 'cli.py'
+      - 'plugins/**'
+      - 'product/roblox_ai_studio/**'
+      - 'optional-skills/**'
+      - 'tests/test_codex_security_*.py'
+      - 'tests/gateway/platforms/test_*security*.py'
+      - '.github/workflows/codex-security-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    name: Codex security regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml pytest pytest-asyncio psutil croniter cryptography python-dotenv aiohttp httpx requests
+
+      - name: Run Codex security regression suite
+        run: |
+          python -m pytest \
+            tests/test_codex_security_fixes.py \
+            tests/test_codex_security_regressions.py \
+            tests/gateway/platforms/test_security.py \
+            tests/gateway/platforms/test_api_server_security.py \
+            product/roblox_ai_studio/app/test_security_controls.py \
+            -q --tb=short

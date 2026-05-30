@@ -1,0 +1,217 @@
+{
+  "generated": "2026-05-22",
+  "archive_ref": "origin/archive/old-hermes-full-20260520-114549",
+  "policy": "Keep every Hermes capability with a plausible Roblox creator story, but expose it only through Playro product allowlists. Archive unrelated or risky generic Hermes surfaces and treat generated artifacts separately from source retention.",
+  "buckets": {
+    "active": "Required for the default Playro desktop/backend experience or repeatable verification path.",
+    "optional": "Kept in repo but hidden, disabled, or gated by settings/project type until a Roblox creator workflow needs it.",
+    "archive_only": "Should not be active on hermes/main; recover from the old Hermes archive branch if needed.",
+    "remove_generated": "Generated or local build artifacts that are not source-retention decisions. Warn by default; do not delete automatically."
+  },
+  "critical_paths": [
+    "product/roblox_ai_studio",
+    "product/roblox_ai_studio/desktop",
+    "product/roblox_ai_studio/hermes_backend/tool_surface.py",
+    "product/roblox_ai_studio/hermes_backend/skill_catalog.py",
+    "product/roblox_ai_studio/hermes_backend/runtime_catalog.py",
+    "product/roblox_ai_studio/hermes_backend/capabilities.py",
+    "product/roblox_ai_studio/config/playro_skill_manifest.json",
+    "scripts/verify-playro-desktop-server.sh"
+  ],
+  "restore_watchlist": [
+    "gateway",
+    "cron",
+    "providers",
+    "plugins",
+    "tools",
+    "agent",
+    "hermes_cli"
+  ],
+  "rules": [
+    {
+      "pattern": "product/roblox_ai_studio/**",
+      "bucket": "active",
+      "reason": "Primary Playro desktop app, backend, generator, tests, packaging, and product-local Hermes bridge."
+    },
+    {
+      "pattern": "product/playro_marketing_site/**",
+      "bucket": "active",
+      "reason": "Product-local Playro marketing and launch surface."
+    },
+    {
+      "pattern": "scripts/verify-playro-desktop-server.sh",
+      "bucket": "active",
+      "reason": "Repeatable Playro desktop/server verification path."
+    },
+    {
+      "pattern": "scripts/*playro*",
+      "bucket": "active",
+      "reason": "Product-local Playro packaging, smoke, validation, and release automation."
+    },
+    {
+      "pattern": "scripts/*roblox*",
+      "bucket": "active",
+      "reason": "Roblox-specific validation or handoff support."
+    },
+    {
+      "pattern": "agent/**",
+      "bucket": "optional",
+      "reason": "Hermes agent runtime can support Playro orchestration behind product boundaries."
+    },
+    {
+      "pattern": "tools/**",
+      "bucket": "optional",
+      "reason": "Tool implementations may support Playro generation, validation, research, packaging, and automation when allowlisted."
+    },
+    {
+      "pattern": "gateway/**",
+      "bucket": "optional",
+      "reason": "Gateway adapters can enable future Discord, Telegram, webhook, API, or mobile build loops."
+    },
+    {
+      "pattern": "cron/**",
+      "bucket": "optional",
+      "reason": "Background job runtime can power opt-in 24/7 Playro builder mode."
+    },
+    {
+      "pattern": "providers/**",
+      "bucket": "optional",
+      "reason": "Provider routing can improve Playro quality modes and model selection."
+    },
+    {
+      "pattern": "hermes_cli/**",
+      "bucket": "optional",
+      "reason": "CLI support layer remains useful for setup, tests, automation, and backend integration."
+    },
+    {
+      "pattern": "plugins/**",
+      "bucket": "optional",
+      "reason": "Plugin backends may support memory, provider, asset, orchestration, and future Roblox adapters when gated."
+    },
+    {
+      "pattern": "skills/**",
+      "bucket": "optional",
+      "reason": "Skill retention is governed in detail by playro_skill_manifest.json; broad skills stay hidden or gated unless product-framed."
+    },
+    {
+      "pattern": "optional-skills/**",
+      "bucket": "optional",
+      "reason": "Optional skills may have Roblox creator stories but must be hidden or gated by Playro allowlists."
+    },
+    {
+      "pattern": "run_agent.py",
+      "bucket": "optional",
+      "reason": "Root Hermes runtime entry point can support backend testing and automation behind Playro."
+    },
+    {
+      "pattern": "model_tools.py",
+      "bucket": "optional",
+      "reason": "Model tooling can support Playro provider routing and quality improvements."
+    },
+    {
+      "pattern": "toolsets.py",
+      "bucket": "optional",
+      "reason": "Toolset metadata can support product-local tool exposure policy."
+    },
+    {
+      "pattern": "toolset_distributions.py",
+      "bucket": "optional",
+      "reason": "Toolset distribution support may help future product packaging and allowlists."
+    },
+    {
+      "pattern": "hermes_*.py",
+      "bucket": "optional",
+      "reason": "Root Hermes support modules can back runtime, logging, state, and bootstrap behavior."
+    },
+    {
+      "pattern": "cli.py",
+      "bucket": "optional",
+      "reason": "Root CLI remains a support layer for testing and automation, not default product UI."
+    },
+    {
+      "pattern": "batch_runner.py",
+      "bucket": "optional",
+      "reason": "Batch jobs may support evaluation, smoke generation, or bulk project validation."
+    },
+    {
+      "pattern": "docs/**",
+      "bucket": "optional",
+      "reason": "Historical plans and docs remain useful for product context and audit traceability."
+    },
+    {
+      "pattern": "optional-skills/blockchain/**",
+      "bucket": "archive_only",
+      "reason": "Blockchain skills lack a Playro Roblox creator story by default."
+    },
+    {
+      "pattern": "optional-skills/finance/**",
+      "bucket": "archive_only",
+      "reason": "Finance modeling is outside Playro Roblox game creation scope."
+    },
+    {
+      "pattern": "skills/red-teaming/godmode/**",
+      "bucket": "archive_only",
+      "reason": "Godmode/jailbreak red-team behavior must not be active in Playro."
+    },
+    {
+      "pattern": "skills/mlops/inference/obliteratus/**",
+      "bucket": "archive_only",
+      "reason": "Jailbreak/red-team inference behavior is out of product scope."
+    },
+    {
+      "pattern": "optional-skills/security/sherlock/**",
+      "bucket": "archive_only",
+      "reason": "OSINT/account-hunting behavior is outside Playro creator workflows."
+    },
+    {
+      "pattern": "**/*unraid*/**",
+      "bucket": "archive_only",
+      "reason": "Unraid is only a build/test host, never Playro product behavior."
+    },
+    {
+      "pattern": "**/*homelab*/**",
+      "bucket": "archive_only",
+      "reason": "Homelab/server-management behavior is outside Playro product scope."
+    },
+    {
+      "pattern": "**/*server-management*/**",
+      "bucket": "archive_only",
+      "reason": "Generic server administration must not become Playro product behavior."
+    },
+    {
+      "pattern": "hermes_agent.egg-info/**",
+      "bucket": "remove_generated",
+      "reason": "Python package metadata generated by build/install commands."
+    },
+    {
+      "pattern": "**/__pycache__/**",
+      "bucket": "remove_generated",
+      "reason": "Python bytecode cache."
+    },
+    {
+      "pattern": "**/*.pyc",
+      "bucket": "remove_generated",
+      "reason": "Python bytecode artifact."
+    },
+    {
+      "pattern": ".pytest_cache/**",
+      "bucket": "remove_generated",
+      "reason": "Local pytest cache."
+    },
+    {
+      "pattern": "product/roblox_ai_studio/generated_projects/make-*/**",
+      "bucket": "remove_generated",
+      "reason": "Generated local Playro project output unless intentionally promoted to a sample."
+    },
+    {
+      "pattern": "product/roblox_ai_studio/desktop/dist/**",
+      "bucket": "remove_generated",
+      "reason": "Desktop build output generated by packaging scripts."
+    },
+    {
+      "pattern": "product/roblox_ai_studio/desktop/release/snapshot-*/**",
+      "bucket": "remove_generated",
+      "reason": "Release staging output generated by desktop packaging."
+    }
+  ]
+}

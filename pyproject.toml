@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "playro"
+version = "1.0.3"
+description = "Playro — AI-powered Roblox game builder from prompt to playable project"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "SokaLabs", email = "sokabusiness@sokatech.xyz" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0.0,<10"]
+
+[project.scripts]
+hermes = "product.roblox_ai_studio.app.cli:main"
+playro = "product.roblox_ai_studio.app.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["product", "product.*"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "product/roblox_ai_studio/tests",
+    "product/roblox_ai_studio/app/test_security_controls.py",
+    "tests",
+]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+exclude = [
+  ".git",
+  ".venv",
+  "venv",
+  "node_modules",
+  "product/roblox_ai_studio/artifacts",
+  "product/roblox_ai_studio/generated_projects",
+  "product/roblox_ai_studio/desktop/dist",
+  "product/roblox_ai_studio/desktop/vendor/playro-engine",
+]
