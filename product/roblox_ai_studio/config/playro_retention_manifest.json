@@ -1,11 +1,11 @@
 {
   "generated": "2026-05-22",
   "archive_ref": "origin/archive/old-hermes-full-20260520-114549",
-  "policy": "Keep every Hermes capability with a plausible Roblox creator story, but expose it only through Playro product allowlists. Archive unrelated or risky generic Hermes surfaces and treat generated artifacts separately from source retention.",
+  "policy": "Keep the Playro product surface and source-based Hermes runtime support, but do not ship inherited skill packs or vendored binary runtimes in the public repository. Archive unrelated or risky generic Hermes surfaces and treat generated artifacts separately from source retention.",
   "buckets": {
     "active": "Required for the default Playro desktop/backend experience or repeatable verification path.",
-    "optional": "Kept in repo but hidden, disabled, or gated by settings/project type until a Roblox creator workflow needs it.",
-    "archive_only": "Should not be active on hermes/main; recover from the old Hermes archive branch if needed.",
+    "optional": "Source-based runtime support kept in repo but hidden, disabled, or gated by settings/project type until a Roblox creator workflow needs it.",
+    "archive_only": "Should not be active on main; recover from the old Hermes archive branch if needed.",
     "remove_generated": "Generated or local build artifacts that are not source-retention decisions. Warn by default; do not delete automatically."
   },
   "critical_paths": [
@@ -90,13 +90,13 @@
     },
     {
       "pattern": "skills/**",
-      "bucket": "optional",
-      "reason": "Skill retention is governed in detail by playro_skill_manifest.json; broad skills stay hidden or gated unless product-framed."
+      "bucket": "archive_only",
+      "reason": "Inherited Hermes skill packs are not shipped in the public Playro repository until individually license-reviewed and product-scoped."
     },
     {
       "pattern": "optional-skills/**",
-      "bucket": "optional",
-      "reason": "Optional skills may have Roblox creator stories but must be hidden or gated by Playro allowlists."
+      "bucket": "archive_only",
+      "reason": "Optional inherited skill packs are not shipped in the public Playro repository until individually license-reviewed and product-scoped."
     },
     {
       "pattern": "run_agent.py",

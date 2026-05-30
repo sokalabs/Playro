@@ -1,8 +1,8 @@
-# Agent Instructions for Hermes-Roblox
+# Agent Instructions for Playro
 
 Read this file and `PROJECT_CONTEXT.md` before making changes.
 
-Hermes-Roblox is a Roblox game-builder prototype built on a product-local Hermes agent backend. Keep work inside this repository unless explicitly told otherwise.
+Playro is a Roblox game-builder prototype built on a product-local Hermes agent backend. Keep work inside this repository unless explicitly told otherwise.
 
 ## Product rules
 

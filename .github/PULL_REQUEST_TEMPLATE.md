@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to Playro / Hermes-Roblox! -->
+<!-- Thanks for contributing to Playro / Playro! -->
 
 ## Summary
 

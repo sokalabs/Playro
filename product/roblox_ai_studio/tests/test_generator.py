@@ -358,7 +358,7 @@ class GeneratorTests(unittest.TestCase):
 
             combined = "\n".join([server, hud, readme, manifest["generator"]])
             self.assertIn("Roblox AI Studio", combined)
-            self.assertNotIn("Hermes-Roblox", combined)
+            self.assertNotIn("Playro", combined)
             self.assertNotIn("HermesRobloxHUD", combined)
 
 

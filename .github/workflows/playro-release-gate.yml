@@ -2,7 +2,7 @@ name: Playro Release Gate
 
 on:
   push:
-    branches: [main, hermes/main]
+    branches: [main]
     paths:
       - "product/roblox_ai_studio/**"
       - "scripts/verify-playro-desktop-server.sh"

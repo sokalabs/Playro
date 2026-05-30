@@ -1,6 +1,6 @@
-# Contributing to Hermes-Roblox
+# Contributing to Playro
 
-Thanks for your interest in contributing. Hermes-Roblox is an early public prototype focused on Roblox game creation through a desktop-first builder experience.
+Thanks for your interest in contributing. Playro is an early public prototype focused on Roblox game creation through a desktop-first builder experience.
 
 By participating, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -58,7 +58,7 @@ scripts/verify-playro-desktop-server.sh
 
 ## Architecture hints & where to start
 
-For first-time contributors, Hermes-Roblox is split into a few key areas:
+For first-time contributors, Playro is split into a few key areas:
 - **`product/roblox_ai_studio/desktop/`**: The frontend UI (Electron + React/TypeScript). Start here if you want to improve the look and feel or user experience of the Playro app.
 - **`product/roblox_ai_studio/roblox/`**: Contains the internal Roblox project generation logic, Luau code templates, and Rojo manifests. Start here if you want to teach Playro how to generate new types of games (like RPGs, Tycoons, or Shooters).
 - **`product/roblox_ai_studio/hermes_backend/`**: The Python communication layer connecting the desktop app to the Hermes AI agent. Start here if you want to add new LLM capabilities, refine code validation, or change the API layer.

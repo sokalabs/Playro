@@ -118,9 +118,6 @@ function verifyPackagedLayout({
   for (const rel of REQUIRED_BACKEND_FILES) {
     assertExists(path.join(backend, rel), `Missing packaged backend file: ${rel}`);
   }
-  assertExists(path.join(packagedRoot, 'resources', 'python', 'python.exe'), 'Missing bundled python runtime');
-  assertExists(path.join(packagedRoot, 'resources', 'rojo', 'rojo.exe'), 'Missing bundled Rojo runtime');
-
   const packagedSource = readPackagedAppSource({ root });
   assertCurrentMainMatchesPackaged({ root, packagedSource });
   assertAppSourceMarkers(packagedSource.source);

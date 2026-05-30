@@ -21,8 +21,6 @@ function createPackagedLayout({ appMainSource, currentMainSource = appMainSource
   writeFile(root, 'dist/win-unpacked/resources/backend/product/roblox_ai_studio/app/api.py');
   writeFile(root, 'dist/win-unpacked/resources/backend/product/roblox_ai_studio/roblox/generator.py');
   writeFile(root, 'dist/win-unpacked/resources/backend/product/roblox_ai_studio/hermes_backend/session.py');
-  writeFile(root, 'dist/win-unpacked/resources/python/python.exe');
-  writeFile(root, 'dist/win-unpacked/resources/rojo/rojo.exe');
   if (includeAppSource) writeFile(root, 'dist/win-unpacked/resources/app/src/main.js', appMainSource);
   return root;
 }

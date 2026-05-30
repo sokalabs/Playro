@@ -24,9 +24,10 @@ class CapabilitiesLearningApiTests(unittest.TestCase):
         self.assertGreaterEqual(native_skill_names, {"Game Designer", "Luau Coder", "World Builder", "Systems Builder", "Playtest Fixer", "Rojo Packager"})
         self.assertNotIn("Obby planner", native_skill_names)
         self.assertNotIn("Tycoon economy", native_skill_names)
-        self.assertGreaterEqual(manifest["skill_catalog"]["counts"]["visible"], 100)
+        self.assertEqual(manifest["skill_catalog"]["counts"]["visible"], len(manifest["roblox_skills"]))
+        self.assertEqual(manifest["skill_catalog"]["counts"]["restored"], 0)
         self.assertIn("toolbox", manifest["skill_catalog"]["default_enabled_buckets"])
-        self.assertTrue(any(skill["source"] == "hermes_skill" for skill in manifest["roblox_skills"]))
+        self.assertTrue(all(skill["source"] == "playro_native" for skill in manifest["roblox_skills"]))
         self.assertGreaterEqual({mode["id"] for mode in manifest["quality_modes"]}, {"fast_draft", "balanced", "high_quality"})
         self.assertEqual(manifest["default_skill_pack"], "first-build")
         packs = manifest["skill_packs"]

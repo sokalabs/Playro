@@ -1,4 +1,4 @@
-"""CLI surface for the Hermes-Roblox local prototype."""
+"""CLI surface for the Playro local prototype."""
 
 from __future__ import annotations
 

@@ -21,8 +21,8 @@ The desktop app checks for Rojo/Studio and shows setup buttons. If Rojo is insta
 ## Dev test from clone
 
 ```powershell
-git clone https://github.com/sokalabs/Hermes-Roblox.git
-cd Hermes-Roblox
+git clone https://github.com/sokalabs/Playro.git
+cd Playro
 cd product\roblox_ai_studio\desktop
 npm install
 npm start

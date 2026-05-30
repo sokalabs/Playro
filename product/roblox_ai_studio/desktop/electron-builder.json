@@ -51,16 +51,8 @@
       "to": "backend/product/roblox_ai_studio/build_loop.py"
     },
     {
-      "from": "vendor/python-win-x64",
-      "to": "python"
-    },
-    {
       "from": "vendor/playro-engine",
       "to": "playro-engine"
-    },
-    {
-      "from": "vendor/rojo-win-x64",
-      "to": "rojo"
     }
   ],
   "win": {

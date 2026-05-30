@@ -36,7 +36,7 @@ How to create the base64 value on Windows:
 
 Then in GitHub:
 
-1. Open `sokalabs/Hermes-Roblox`.
+1. Open `sokalabs/Playro`.
 2. Go to **Settings → Secrets and variables → Actions → New repository secret**.
 3. Create `WINDOWS_CERTIFICATE` with the copied base64 text.
 4. Create `WINDOWS_CERTIFICATE_PASSWORD` with the PFX password.

@@ -3,7 +3,7 @@ name: OSV-Scanner
 # Detection-only dependency vulnerability scan.
 #
 # This workflow intentionally does not upload SARIF to GitHub code scanning:
-# sokalabs/Hermes-Roblox does not currently have code scanning enabled, and
+# sokalabs/Playro does not currently have code scanning enabled, and
 # upload-sarif turns a successful detection report into a failing Actions run.
 # Results are preserved as artifacts and step summaries instead, while repair
 # work can continue on normal PR branches.
@@ -19,7 +19,7 @@ name: OSV-Scanner
 
 on:
   push:
-    branches: [main, hermes/main]
+    branches: [main]
     paths:
       - 'uv.lock'
       - 'pyproject.toml'
@@ -43,7 +43,7 @@ on:
   schedule:
     - cron: '0 6 * * 1'
   pull_request:
-    branches: [main, hermes/main]
+    branches: [main]
     paths:
       - 'uv.lock'
       - 'pyproject.toml'

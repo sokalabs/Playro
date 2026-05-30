@@ -167,9 +167,9 @@ function validateRojoHandoff(projectPath) {
     } catch (firstError) {
       logs.push(`[acceptance] packaged Electron shell did not expose backend quickly: ${firstError.message}\n`);
       const backendDir = path.join(WIN_UNPACKED, 'resources', 'backend');
-      const pythonExe = path.join(WIN_UNPACKED, 'resources', 'python', 'python.exe');
+      const packagedPython = path.join(WIN_UNPACKED, 'resources', 'python', 'python.exe');
+      const pythonExe = process.env.PLAYRO_WINDOWS_PYTHON || (exists(packagedPython) ? packagedPython : 'python');
       assert(exists(backendDir), `Missing packaged backend dir at ${backendDir}`);
-      assert(exists(pythonExe), `Missing packaged Python runtime at ${pythonExe}`);
       backendChild = spawn(pythonExe, ['-m', 'product.roblox_ai_studio.app.api'], {
         cwd: backendDir,
         stdio: ['ignore', 'pipe', 'pipe'],

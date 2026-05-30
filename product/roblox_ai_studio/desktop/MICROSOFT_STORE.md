@@ -37,7 +37,7 @@ For Microsoft Store submission, Electron Builder docs state the Store will sign 
    - Category: Games / Developer tools, depending on Store availability.
    - Short description: `AI-powered Roblox game builder from prompt to playable project.`
    - Support contact: `sokabusiness@sokatech.xyz`
-   - Website: `https://github.com/sokalabs/Hermes-Roblox` until a public Playro site exists.
+   - Website: `https://github.com/sokalabs/Playro` until a public Playro site exists.
 6. Provide privacy policy URL before public submission.
 7. Submit for Microsoft certification.
 

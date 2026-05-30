@@ -1,4 +1,4 @@
-"""Product session facade for the Hermes-Roblox prototype.
+"""Product session facade for the Playro prototype.
 
 This is a thin product-level boundary around Hermes concepts. It gives the
 prototype a clean Roblox-focused backend surface without importing live personal

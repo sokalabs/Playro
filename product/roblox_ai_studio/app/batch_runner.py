@@ -1,4 +1,4 @@
-"""Backend 24-hour autonomous batch runner for Hermes-Roblox.
+"""Backend 24-hour autonomous batch runner for Playro.
 
 This script executes queued generation tasks while explicitly enforcing safe
 fallback provider routing. It avoids cliproxyapi + gpt-5.5 overrides that
@@ -79,7 +79,7 @@ def main() -> int:
         print("[batch_runner] Executing safe-provider smoke build...")
         res = create_build_job(
             "smoke test obby",
-            output_root=root or Path("/tmp/hermes-roblox-batch-smoke"),
+            output_root=root or Path("/tmp/Playro-batch-smoke"),
             continuous=True,
             autonomous=True
         )

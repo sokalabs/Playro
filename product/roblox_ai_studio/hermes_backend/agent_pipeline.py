@@ -214,7 +214,7 @@ def _agent_prompt(user_prompt: str, continuous: bool = False) -> str:
             " Describe how future Kanban/cron passes can improve this project automatically."
         )
     return (
-        f"You are the Hermes-Roblox build engine. Generate a complete, Rojo-ready"
+        f"You are the Playro build engine. Generate a complete, Rojo-ready"
         f" Roblox project from this prompt:\n\n"
         f'"{user_prompt}"\n\n'
         f"Steps:\n"
@@ -237,7 +237,7 @@ def _agent_refine_prompt(
     original_prompt: str, refinement: str, project_path: str
 ) -> str:
     return (
-        f"You are the Hermes-Roblox refinement engine. Improve an existing Roblox"
+        f"You are the Playro refinement engine. Improve an existing Roblox"
         f" project at:\n\n"
         f"{project_path}\n\n"
         f"Original prompt: {original_prompt}\n"

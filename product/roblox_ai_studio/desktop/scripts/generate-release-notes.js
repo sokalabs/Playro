@@ -88,7 +88,7 @@ function main() {
     '',
     '## Support',
     '',
-    '- Issues: https://github.com/sokalabs/Hermes-Roblox/issues',
+    '- Issues: https://github.com/sokalabs/Playro/issues',
     '- Contact: sokabusiness@sokatech.xyz',
     '',
     '## Rollback',

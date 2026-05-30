@@ -348,17 +348,17 @@ def test_agent_structured_redaction_covers_common_secret_field_names():
 
 def test_agent_redacts_non_home_absolute_machine_paths():
     text = (
-        "Wrote C:\\workspace\\Hermes-Roblox and D:\\builds\\playro; "
-        "also /workspace/Hermes-Roblox, /tmp/playro-secret, /var/folders/abc/xyz; "
+        "Wrote C:\\workspace\\Playro and D:\\builds\\playro; "
+        "also /workspace/Playro, /tmp/playro-secret, /var/folders/abc/xyz; "
         "keep generated_projects/foo"
     )
 
     redacted = ap._redact_sensitive_text(text)
 
     assert redacted.count("[REDACTED_PATH]") == 5
-    assert "C:\\workspace\\Hermes-Roblox" not in redacted
+    assert "C:\\workspace\\Playro" not in redacted
     assert "D:\\builds\\playro" not in redacted
-    assert "/workspace/Hermes-Roblox" not in redacted
+    assert "/workspace/Playro" not in redacted
     assert "/tmp/playro-secret" not in redacted
     assert "/var/folders/abc/xyz" not in redacted
     assert "generated_projects/foo" in redacted

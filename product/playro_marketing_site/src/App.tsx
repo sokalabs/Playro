@@ -1,7 +1,7 @@
 import { Bot, Code2, Rocket, Sparkles, CheckCircle2, MonitorPlay } from 'lucide-react';
 
 function App() {
-  const REPO_URL = "https://github.com/sokalabs/Hermes-Roblox";
+  const REPO_URL = "https://github.com/sokalabs/Playro";
 
   return (
     <div className="min-h-screen font-sans selection:bg-primary/30">

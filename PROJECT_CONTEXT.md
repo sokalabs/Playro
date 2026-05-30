@@ -1,10 +1,10 @@
-# Project Context: Hermes-Roblox
+# Project Context: Playro
 
-Hermes-Roblox is an open-source Roblox game-builder prototype. The user-facing desktop app is currently branded as Playro. It helps users turn Roblox game prompts into Rojo-ready projects using a product-local Hermes agent backend foundation.
+Playro is an open-source Roblox game-builder prototype. The user-facing desktop app is currently branded as Playro. It helps users turn Roblox game prompts into Rojo-ready projects using a product-local Hermes agent backend foundation.
 
 ## Identity
 
-- Repository: `Hermes-Roblox`
+- Repository: `Playro`
 - Product surface: desktop-first Roblox builder
 - Backend foundation: Hermes agent runtime and supporting tooling
 - Primary output: generated Roblox project folders with plans, manifests, Rojo mappings, and Luau source

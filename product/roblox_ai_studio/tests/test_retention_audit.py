@@ -61,9 +61,10 @@ def test_ignored_generated_artifacts_can_be_discovered(tmp_path: Path):
     assert discover_generated_paths(tmp_path, manifest) == ["hermes_agent.egg-info/PKG-INFO"]
 
 
-def test_conditional_skills_are_not_user_visible_by_default():
+def test_inherited_skills_are_not_user_visible_by_default():
     visible_paths = {skill["path"] for skill in playro_skill_catalog()}
 
+    assert all(skill["source"] == "playro_native" for skill in playro_skill_catalog())
     assert "skills/apple/imessage" not in visible_paths
     assert "skills/gaming/minecraft-modpack-server" not in visible_paths
 

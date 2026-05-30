@@ -2,7 +2,7 @@ name: Codex Security Regression
 
 on:
   push:
-    branches: [main, hermes/main]
+    branches: [main]
     paths:
       - 'gateway/**'
       - 'tools/**'
@@ -14,12 +14,11 @@ on:
       - 'cli.py'
       - 'plugins/**'
       - 'product/roblox_ai_studio/**'
-      - 'optional-skills/**'
       - 'tests/test_codex_security_*.py'
       - 'tests/gateway/platforms/test_*security*.py'
       - '.github/workflows/codex-security-regression.yml'
   pull_request:
-    branches: [main, hermes/main]
+    branches: [main]
     paths:
       - 'gateway/**'
       - 'tools/**'
@@ -31,7 +30,6 @@ on:
       - 'cli.py'
       - 'plugins/**'
       - 'product/roblox_ai_studio/**'
-      - 'optional-skills/**'
       - 'tests/test_codex_security_*.py'
       - 'tests/gateway/platforms/test_*security*.py'
       - '.github/workflows/codex-security-regression.yml'

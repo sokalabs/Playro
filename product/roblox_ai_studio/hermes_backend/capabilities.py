@@ -215,7 +215,7 @@ HERMES_PARITY_SURFACES = [
         "playro_surface": "Safe product settings for output folders, Studio/Rojo paths, runtime setup, and quality defaults.",
         "status": "prototype",
         "rows": [
-            ["Runtime", "Bundled Playro service plus required product-local Hermes engine"],
+            ["Runtime", "Local Playro service plus required product-local Hermes engine"],
             ["Creator tools", "Roblox Studio and Rojo checks"],
             ["Boundary", "No live Hermes config import"],
         ],

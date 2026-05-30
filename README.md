@@ -1,6 +1,6 @@
-# Hermes-Roblox
+# Playro
 
-Hermes-Roblox is an open-source, desktop-first Roblox game builder. The desktop app, currently branded as **Playro**, turns a plain-language game idea into a Rojo-ready Roblox project with a build plan, manifest, Luau scripts, and handoff files for Roblox Studio.
+Playro is an open-source, desktop-first Roblox game builder. The desktop app turns a plain-language game idea into a Rojo-ready Roblox project with a build plan, manifest, Luau scripts, and handoff files for Roblox Studio.
 
 The project uses a product-local Hermes agent backend as the runtime foundation for planning, generation, validation, and refinement. The visible product is the Roblox builder experience; the CLI and API are support layers for testing, automation, and desktop integration.
 
@@ -34,7 +34,7 @@ product/roblox_ai_studio/              Roblox builder backend, generator, app te
 product/roblox_ai_studio/desktop/      Electron desktop app and packaging scripts
 product/playro_marketing_site/         Marketing site prototype
 scripts/verify-playro-desktop-server.sh  Server-side verification workflow
-agent/, tools/, gateway/, skills/      Hermes runtime foundation retained for backend work
+agent/, tools/, gateway/, plugins/      Source-based Hermes runtime foundation retained for backend work
 ```
 
 ## Requirements
@@ -45,11 +45,13 @@ agent/, tools/, gateway/, skills/      Hermes runtime foundation retained for ba
 - [Rojo](https://rojo.space/) (Required for syncing generated files into Roblox Studio)
 - [Roblox Studio](https://create.roblox.com/)
 
+The repository does not vendor Python, Rojo, Electron packages, or generated desktop builds. Install those tools locally through their normal package managers or installers.
+
 ## Quick start: desktop app
 
 ```bash
-git clone https://github.com/sokalabs/Hermes-Roblox.git
-cd Hermes-Roblox/product/roblox_ai_studio/desktop
+git clone https://github.com/sokalabs/Playro.git
+cd Playro/product/roblox_ai_studio/desktop
 npm install
 npm run start
 ```
@@ -93,7 +95,7 @@ Useful environment variables:
 This verifies Roblox artifact generation without requiring an API key or LLM call:
 
 ```bash
-cd Hermes-Roblox
+cd Playro
 python -m product.roblox_ai_studio.app.cli \
   "make a colorful obby with checkpoints, coins, and a shop" \
   --output-root ./tmp/playro-smoke \
@@ -106,7 +108,7 @@ python -m product.roblox_ai_studio.app.cli \
 For standalone API testing, set a local token and start the server:
 
 ```bash
-cd Hermes-Roblox
+cd Playro
 PLAYRO_API_TOKEN=dev-local-token python -m product.roblox_ai_studio.app.api
 ```
 
@@ -134,7 +136,7 @@ python -m pytest product/roblox_ai_studio/tests product/roblox_ai_studio/app/tes
 scripts/verify-playro-desktop-server.sh
 ```
 
-Some inherited Hermes tests cover broader agent/runtime surfaces and may require platform-specific tools or credentials.
+Some root Hermes runtime tests cover broader agent/runtime surfaces and may require platform-specific tools or credentials.
 
 ## Security notes
 

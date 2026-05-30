@@ -81,17 +81,17 @@ function main() {
     release_channel: releaseChannel(),
     signed_windows_artifacts_required: isProductionRelease(),
     unsigned_build_label: isProductionRelease() ? null : 'INTERNAL TEST BUILD - unsigned artifacts may trigger SmartScreen',
-    release_page: `https://github.com/sokalabs/Hermes-Roblox/releases/tag/${releaseTag}`,
+    release_page: `https://github.com/sokalabs/Playro/releases/tag/${releaseTag}`,
     assets: {
       installer: {
         file: setupName,
-        url: `https://github.com/sokalabs/Hermes-Roblox/releases/download/${releaseTag}/Playro.Setup.${version}.exe`,
+        url: `https://github.com/sokalabs/Playro/releases/download/${releaseTag}/Playro.Setup.${version}.exe`,
         sha256: sha256(setupPath),
         size_bytes: sizeBytes(setupPath),
       },
       portable: {
         file: portableName,
-        url: `https://github.com/sokalabs/Hermes-Roblox/releases/download/${releaseTag}/Playro.${version}.exe`,
+        url: `https://github.com/sokalabs/Playro/releases/download/${releaseTag}/Playro.${version}.exe`,
         sha256: sha256(portablePath),
         size_bytes: sizeBytes(portablePath),
       },

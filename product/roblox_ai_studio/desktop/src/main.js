@@ -379,7 +379,7 @@ async function backendHealth(timeoutMs = 1200) {
 const ALLOWED_EXTERNAL_URLS = new Set([
   'https://create.roblox.com/',
   'https://github.com/rojo-rbx/rojo/releases',
-  'https://github.com/sokalabs/Hermes-Roblox'
+  'https://github.com/sokalabs/Playro'
 ]);
 
 function isAllowedExternalUrl(url) {

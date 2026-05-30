@@ -3,7 +3,7 @@
   "version": "1.0.4",
   "description": "Playro — AI-powered Roblox game builder from prompt to playable project",
   "author": "SokaLabs <sokabusiness@sokatech.xyz>",
-  "homepage": "https://github.com/sokalabs/Hermes-Roblox",
+  "homepage": "https://github.com/sokalabs/Playro",
   "license": "MIT",
   "main": "src/main.js",
   "scripts": {

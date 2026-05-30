@@ -1,4 +1,4 @@
-# Hermes-Roblox Sprint Sample Projects
+# Playro Sprint Sample Projects
 
 These sample Roblox projects were generated with the product CLI (`python3 -m product.roblox_ai_studio.app.cli`) for clone-testable sprint validation.
 

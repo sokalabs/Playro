@@ -1,7 +1,7 @@
 """Product-local API for the Roblox AI Studio desktop app.
 
 This API is a desktop support layer. The visible product is the Electron GUI;
-this backend gives that GUI a clean, Roblox-focused bridge into Hermes-Roblox
+this backend gives that GUI a clean, Roblox-focused bridge into Playro
 without importing live personal Hermes gateways, MCP servers, or environment-
 specific plugins.
 """
@@ -925,7 +925,7 @@ class RobloxAIStudioHandler(BaseHTTPRequestHandler):
                 {
                     "ok": True,
                     "product": "Roblox AI Studio",
-                    "backend": "Hermes-Roblox",
+                    "backend": "Playro",
                     "mission": "Desktop app first. Product-grade UI. Hermes backend. Roblox creation from prompts.",
                 },
             )

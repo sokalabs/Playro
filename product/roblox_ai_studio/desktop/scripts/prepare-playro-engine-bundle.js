@@ -6,8 +6,8 @@ const desktopRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(desktopRoot, '..', '..', '..');
 const vendorRoot = path.join(desktopRoot, 'vendor', 'playro-engine');
 const bundleRoot = path.join(vendorRoot, 'hermes-agent');
-const pythonRoot = path.join(desktopRoot, 'vendor', 'python-win-x64');
-const bundledPythonExe = path.join(pythonRoot, 'python.exe');
+const legacyBundledPythonRoot = path.join(desktopRoot, 'vendor', 'python-win-x64');
+const legacyBundledPythonExe = path.join(legacyBundledPythonRoot, 'python.exe');
 const markerFile = path.join(bundleRoot, 'PLAYRO_ENGINE_BUNDLE.txt');
 
 function run(command, args, options = {}) {
@@ -110,8 +110,8 @@ function resolvePythonExe() {
     if (!pythonSupportsVenv(override)) throw new Error(`${override} does not support -m venv`);
     return override;
   }
-  if (fs.existsSync(bundledPythonExe) && pythonSupportsVenv(bundledPythonExe)) {
-    return bundledPythonExe;
+  if (fs.existsSync(legacyBundledPythonExe) && pythonSupportsVenv(legacyBundledPythonExe)) {
+    return legacyBundledPythonExe;
   }
   if (process.platform === 'win32') {
     for (const candidate of ['py', 'python']) {
@@ -119,13 +119,13 @@ function resolvePythonExe() {
       if (probe.status === 0 && pythonSupportsVenv(candidate)) return candidate;
     }
   }
-  throw new Error(`Missing Windows Python with venv support. Expected bundled runtime at ${bundledPythonExe}, or set PLAYRO_WINDOWS_PYTHON to python.exe.`);
+  throw new Error('Missing Windows Python with venv support. Install Python locally or set PLAYRO_WINDOWS_PYTHON to python.exe.');
 }
 
 function ensureWindowsVenv() {
   const pythonExe = resolvePythonExe();
-  const pth = path.join(pythonRoot, 'python311._pth');
-  if (pythonExe === bundledPythonExe && fs.existsSync(pth)) {
+  const pth = path.join(legacyBundledPythonRoot, 'python311._pth');
+  if (pythonExe === legacyBundledPythonExe && fs.existsSync(pth)) {
     const current = fs.readFileSync(pth, 'utf8');
     if (!current.includes('import site')) {
       fs.writeFileSync(pth, `${current.trim()}\nimport site\n`, 'utf8');

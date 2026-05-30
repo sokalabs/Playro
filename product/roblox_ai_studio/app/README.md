@@ -1,6 +1,6 @@
 # App Prototype
 
-This folder contains the first Hermes-Roblox product surfaces:
+This folder contains the first Playro product surfaces:
 
 - `cli.py`: command-line prompt-to-Roblox-project generator.
 - `api.py`: tiny local HTTP API prototype for future UI wiring.

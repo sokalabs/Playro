@@ -1,8 +1,8 @@
 """Product-local skill catalog for Playro.
 
-This bridges the restored Hermes `skills/` and `optional-skills/` directories into
-Playro's Roblox-focused backend surface. The files are shipped with the repo,
-but this module controls what the desktop app and API expose.
+Public Playro releases expose native Roblox build skills only. Historical
+Hermes skill packs are not shipped until they have a Playro-specific purpose
+and a clean redistribution review.
 """
 
 from __future__ import annotations
@@ -211,7 +211,7 @@ def native_playro_skill_templates() -> list[dict[str, Any]]:
 
 @lru_cache(maxsize=2)
 def playro_skill_catalog(*, include_conditional: bool = False) -> tuple[dict[str, Any], ...]:
-    """Return user-facing Playro skills, including restored Hermes toolbox skills."""
+    """Return user-facing Playro skills."""
 
     manifest = load_skill_manifest()
     enabled_buckets = set(manifest.get("default_enabled_buckets", ["core", "toolbox"]))

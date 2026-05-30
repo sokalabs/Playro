@@ -54,7 +54,7 @@ def download_image_url(
         for _hop in range(_MAX_REDIRECT_HOPS + 1):
             request = Request(
                 current_url,
-                headers={"User-Agent": "Hermes-Roblox safe-image-download"},
+                headers={"User-Agent": "Playro safe-image-download"},
             )
             try:
                 with _OPENER.open(request, timeout=30) as response:  # noqa: S310 - URL is validated above.

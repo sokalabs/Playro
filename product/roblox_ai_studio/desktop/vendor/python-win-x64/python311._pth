@@ -1,6 +1,0 @@
-python311.zip
-.
-..\backend
-
-# Uncomment to run site.main() automatically
-import site

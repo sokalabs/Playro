@@ -4,7 +4,7 @@
 
 Please do not open a public issue for a security vulnerability. Report suspected vulnerabilities privately through GitHub Security Advisories:
 
-https://github.com/sokalabs/Hermes-Roblox/security/advisories/new
+https://github.com/sokalabs/Playro/security/advisories/new
 
 Include as much detail as you can safely provide:
 
@@ -20,7 +20,7 @@ This project is an early public prototype. Security fixes are targeted at the cu
 
 ## Security model
 
-Hermes-Roblox is a local-first Roblox builder. The desktop app starts a local backend API that binds to loopback by default and uses a per-session API token for protected requests. Generated Roblox projects are written to local disk for review and handoff to Rojo/Roblox Studio.
+Playro is a local-first Roblox builder. The desktop app starts a local backend API that binds to loopback by default and uses a per-session API token for protected requests. Generated Roblox projects are written to local disk for review and handoff to Rojo/Roblox Studio.
 
 Important boundaries:
 
