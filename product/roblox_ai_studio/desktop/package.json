@@ -43,5 +43,8 @@
   "devDependencies": {
     "electron": "^39.8.10",
     "electron-builder": "^26.8.1"
+  },
+  "overrides": {
+    "tmp": "^0.2.7"
   }
 }
