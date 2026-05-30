@@ -305,6 +305,15 @@ const OFFICIAL_HERMES_INSTALL_URL = [
   OFFICIAL_HERMES_INSTALL_BRANCH,
   OFFICIAL_HERMES_INSTALL_SCRIPT
 ].join('/');
+// Windows uses the official native PowerShell installer; the bash install.sh
+// deliberately rejects Windows (CYGWIN/MINGW/MSYS) and points callers here.
+const OFFICIAL_HERMES_INSTALL_SCRIPT_WINDOWS = ['scripts', ['install', 'ps1'].join('.')].join('/');
+const OFFICIAL_HERMES_INSTALL_URL_WINDOWS = [
+  OFFICIAL_HERMES_INSTALL_HOST,
+  OFFICIAL_HERMES_INSTALL_REPO,
+  OFFICIAL_HERMES_INSTALL_BRANCH,
+  OFFICIAL_HERMES_INSTALL_SCRIPT_WINDOWS
+].join('/');
 
 // Opt-out escape hatch for locked-down deployments: when
 // PLAYRO_DISABLE_REMOTE_HERMES_INSTALL=1, the remote installer fallback is
@@ -340,38 +349,24 @@ function startRemoteHermesInstall(hermesHome) {
   let command;
   let args;
   if (process.platform === 'win32') {
-    // Drive the official installer via a non-interactive PowerShell command
-    // (mirrors installRojoWithPackageManager). The installer URL is pinned above.
-    //
-    // The official Hermes installer is a bash script. On Windows it MUST run under
-    // Git Bash (MSYS), never WSL: `Get-Command bash` resolves to the WSL bash.exe
-    // app-execution alias on any machine that has WSL installed, which would run
-    // the Linux installer inside WSL with an untranslatable Windows HERMES_HOME and
-    // produce a Linux venv the Windows app can never locate. So we resolve Git Bash
-    // explicitly from its known install locations and bootstrap Git for Windows
-    // silently via winget (the same trusted-package-manager pattern Playro uses for
-    // Rojo) only when Git Bash is absent. HERMES_HOME is passed in a Git Bash
-    // friendly forward-slash form. The whole command runs in the windowsHide spawn
-    // below, so it never surfaces a console window.
-    const wingetExe = resolveWingetExecutable();
-    const wingetRef = wingetExe ? JSON.stringify(wingetExe) : `'winget'`;
-    const gitBashCandidates = [
-      '"$env:ProgramFiles\\Git\\bin\\bash.exe"',
-      '"${env:ProgramFiles(x86)}\\Git\\bin\\bash.exe"',
-      '"$env:LOCALAPPDATA\\Programs\\Git\\bin\\bash.exe"'
-    ].join(', ');
-    const resolveGitBash = `@(${gitBashCandidates}) | Where-Object { Test-Path $_ } | Select-Object -First 1`;
-    const hermesHomeMsys = hermesHome.replace(/\\/g, '/');
+    // Windows uses the official Hermes PowerShell installer (scripts/install.ps1).
+    // The bash install.sh deliberately rejects Windows (CYGWIN/MINGW/MSYS) and
+    // directs callers here, so running it under Git Bash or WSL can never work.
+    // install.ps1 is native PowerShell and self-provisions uv, PortableGit, and
+    // Python; -NonInteractive disables every prompt and -SkipSetup skips the
+    // post-install gateway flow, giving a fully unattended, zero-touch install. We
+    // download it to a file under HERMES_HOME so pinned parameters can be passed,
+    // then run it in the windowsHide spawn below (no console window). The installer
+    // URL is pinned above.
+    const installerPath = path.join(hermesHome, '_playro-hermes-install.ps1');
+    const installDir = resolveHermesAgentDir();
     const script = [
       `$ErrorActionPreference = 'Stop'`,
-      `$gitBash = ${resolveGitBash}`,
-      `if (-not $gitBash) { Write-Output 'Bootstrapping Git for Windows (provides bash) with Windows Package Manager...'; & ${wingetRef} install --id Git.Git --exact --silent --accept-package-agreements --accept-source-agreements; $gitBash = ${resolveGitBash} }`,
-      `if (-not $gitBash) { throw 'Git Bash was not found and could not be installed; cannot run the official Playro AI engine installer on Windows.' }`,
-      `Write-Output ('Using Git Bash: ' + $gitBash)`,
-      `$env:HERMES_HOME = ${JSON.stringify(hermesHomeMsys)}`,
+      `$ProgressPreference = 'SilentlyContinue'`,
+      `Write-Output 'Downloading the official Playro AI engine installer...'`,
+      `Invoke-WebRequest -UseBasicParsing -Uri ${JSON.stringify(OFFICIAL_HERMES_INSTALL_URL_WINDOWS)} -OutFile ${JSON.stringify(installerPath)}`,
       `Write-Output 'Installing the official Playro AI engine...'`,
-      `$installer = (Invoke-WebRequest -UseBasicParsing -Uri ${JSON.stringify(OFFICIAL_HERMES_INSTALL_URL)}).Content`,
-      `$installer | & $gitBash -s --`,
+      `& ${JSON.stringify(installerPath)} -NonInteractive -SkipSetup -HermesHome ${JSON.stringify(hermesHome)} -InstallDir ${JSON.stringify(installDir)}`,
       `Write-Output 'Playro AI engine install complete.'`
     ].join('; ');
     command = 'powershell.exe';
