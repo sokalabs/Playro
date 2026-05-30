@@ -1221,6 +1221,11 @@ function renderBuildModePanel() {
 }
 
 
+// Guards for the zero-touch setup flow so auto-start/auto-launch fire at most once
+// per session even though the setup view re-renders (and re-binds) repeatedly.
+let setupAutoStarted = false;
+let setupAutoLaunched = false;
+
 function isSetupRoute() {
   return window.location?.hash === '#setup';
 }
@@ -1293,13 +1298,47 @@ function renderPlayroSetupScreen() {
 function bindSetupScreenEvents() {
   document.getElementById('btn-start-full-setup')?.addEventListener('click', startFullSetupFlow);
   document.getElementById('btn-skip-playro-setup')?.addEventListener('click', skipPlayroSetupFlow);
-  document.getElementById('btn-launch-playro')?.addEventListener('click', () => {
-    window.location.hash = '';
-    render();
-    refreshSetup();
-    refreshCapabilities();
-  });
+  document.getElementById('btn-launch-playro')?.addEventListener('click', launchPlayroFromSetup);
   document.getElementById('btn-open-rojo-docs-setup')?.addEventListener('click', () => window.robloxAIStudio?.openExternal?.('https://rojo.space/docs/v7/getting-started/installation/'));
+  // Headless, zero-touch setup: kick off the full install automatically as soon as
+  // the setup view loads. No click is required for the happy path; the buttons above
+  // remain as fallbacks (retry on failure, skip, manual launch).
+  maybeAutoStartSetup();
+  // If progress (from startFullSetupFlow or onPlayroSetupProgress) has reported
+  // completion, auto-dismiss the setup screen and launch the app.
+  maybeAutoLaunchSetup();
+}
+
+function maybeAutoStartSetup() {
+  if (!isSetupRoute()) return;
+  const setup = state.playroSetup || {};
+  // Only auto-start once, and never override a run already in flight, completed, or failed.
+  if (setupAutoStarted || setup.started || setup.status === 'running' || setup.status === 'complete' || setup.status === 'failed') {
+    return;
+  }
+  if (!window.robloxAIStudio?.startFullSetup) return;
+  setupAutoStarted = true;
+  startFullSetupFlow();
+}
+
+function maybeAutoLaunchSetup() {
+  if (!isSetupRoute()) return;
+  if (state.playroSetup?.status !== 'complete') return;
+  if (setupAutoLaunched) return;
+  setupAutoLaunched = true;
+  // Give the user a brief moment to see the "ready" state, then auto-advance.
+  setTimeout(() => {
+    if (isSetupRoute() && state.playroSetup?.status === 'complete') {
+      launchPlayroFromSetup();
+    }
+  }, 900);
+}
+
+function launchPlayroFromSetup() {
+  window.location.hash = '';
+  render();
+  refreshSetup();
+  refreshCapabilities();
 }
 
 async function skipPlayroSetupFlow() {
