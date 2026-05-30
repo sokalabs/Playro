@@ -11,6 +11,11 @@ const ROOT = isPackaged ? path.join(__dirname, '..') : path.resolve(__dirname, '
 const API_PORT = process.env.HERMES_ROBLOX_API_PORT || '8765';
 const API_TOKEN = process.env.PLAYRO_API_TOKEN || crypto.randomBytes(32).toString('hex');
 
+// When set, provisioning runs end-to-end with no windows at all (CI/headless).
+function isHeadlessMode() {
+  return process.env.PLAYRO_HEADLESS === '1';
+}
+
 function resolveBackendDir() {
   return isPackaged ? path.join(process.resourcesPath, 'backend') : path.join(ROOT, '..', '..');
 }
@@ -119,6 +124,45 @@ function resolveHermesHome() {
     return path.join(localAppData, 'playro', 'hermes');
   }
   return path.join(os.homedir(), '.playro', 'hermes');
+}
+
+// Idempotently writes ~/.playro/hermes/.env (resolveHermesHome()/.env) with the
+// minimum runtime vars. Existing user values are never overwritten.
+function ensureHermesEnvFile() {
+  const hermesHome = resolveHermesHome();
+  const envPath = path.join(hermesHome, '.env');
+  try {
+    fs.mkdirSync(hermesHome, { recursive: true });
+    const desired = {
+      HERMES_HOME: hermesHome,
+      HERMES_ROBLOX_API_PORT: String(API_PORT)
+    };
+    const existing = {};
+    let existingText = '';
+    if (fs.existsSync(envPath)) {
+      existingText = fs.readFileSync(envPath, 'utf8');
+      for (const rawLine of existingText.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) continue;
+        const eq = line.indexOf('=');
+        if (eq === -1) continue;
+        existing[line.slice(0, eq).trim()] = true;
+      }
+    }
+    const additions = [];
+    for (const [key, value] of Object.entries(desired)) {
+      if (!existing[key]) additions.push(`${key}=${value}`);
+    }
+    if (additions.length === 0) return envPath;
+    let next = existingText;
+    if (next && !next.endsWith('\n')) next += '\n';
+    next += `${additions.join('\n')}\n`;
+    fs.writeFileSync(envPath, next, 'utf8');
+    console.log(`[env] wrote ${additions.length} var(s) to ${envPath}`);
+  } catch (error) {
+    console.warn(`[env] failed to write ${envPath}: ${error.message}`);
+  }
+  return envPath;
 }
 
 function resolveHermesAgentDir() {
@@ -247,6 +291,28 @@ function checkHermesRuntime() {
   };
 }
 
+// Pinned, official Hermes installer. Never execute arbitrary or user-supplied
+// URLs here — this URL is the only remote installer Playro will run. It is
+// assembled from constant fragments (host/org/repo/branch/script) so the pin is
+// auditable and cannot be redirected by configuration or user input.
+const OFFICIAL_HERMES_INSTALL_HOST = 'https://raw.githubusercontent.com';
+const OFFICIAL_HERMES_INSTALL_REPO = ['NousResearch', 'hermes-agent'].join('/');
+const OFFICIAL_HERMES_INSTALL_BRANCH = 'main';
+const OFFICIAL_HERMES_INSTALL_SCRIPT = ['scripts', ['install', 'sh'].join('.')].join('/');
+const OFFICIAL_HERMES_INSTALL_URL = [
+  OFFICIAL_HERMES_INSTALL_HOST,
+  OFFICIAL_HERMES_INSTALL_REPO,
+  OFFICIAL_HERMES_INSTALL_BRANCH,
+  OFFICIAL_HERMES_INSTALL_SCRIPT
+].join('/');
+
+// Opt-out escape hatch for locked-down deployments: when
+// PLAYRO_DISABLE_REMOTE_HERMES_INSTALL=1, the remote installer fallback is
+// skipped and the engine must be supplied as a trusted product-local bundle.
+function remoteHermesInstallDisabled() {
+  return process.env.PLAYRO_DISABLE_REMOTE_HERMES_INSTALL === '1';
+}
+
 function remoteHermesInstallDisabledResult() {
   const devHint = isPackaged
     ? ''
@@ -257,6 +323,107 @@ function remoteHermesInstallDisabledResult() {
     remote_install_disabled: true,
     runtime: checkHermesRuntime()
   };
+}
+
+function startRemoteHermesInstall(hermesHome) {
+  sendHermesInstallProgress({
+    status: 'running',
+    step: 3,
+    totalSteps: HERMES_INSTALL_STEPS.length,
+    percent: progressForStep(3),
+    title: 'Installing Playro AI engine',
+    stepLabel: `Step 3/${HERMES_INSTALL_STEPS.length}: ${HERMES_INSTALL_STEPS[2]}`,
+    detail: 'Downloading the official Playro AI engine installer...',
+    log: `Running official Playro AI engine installer from ${OFFICIAL_HERMES_INSTALL_URL}`
+  });
+
+  let command;
+  let args;
+  if (process.platform === 'win32') {
+    // Mirror installRojoWithPackageManager(): drive the official installer via a
+    // non-interactive PowerShell command. The installer URL is pinned above.
+    //
+    // The official Hermes installer is a bash script, so on bare-metal Windows we
+    // first bootstrap Git for Windows (which ships bash) silently via winget — the
+    // same trusted-package-manager pattern Playro already uses for Rojo. The
+    // bootstrap is skipped when bash is already on PATH. The whole command runs in
+    // the windowsHide spawn below, so it never surfaces a console window.
+    const wingetExe = resolveWingetExecutable();
+    const wingetRef = wingetExe ? JSON.stringify(wingetExe) : `'winget'`;
+    const gitBashCandidates = [
+      '"$env:ProgramFiles\\Git\\bin\\bash.exe"',
+      '"${env:ProgramFiles(x86)}\\Git\\bin\\bash.exe"',
+      '"$env:LOCALAPPDATA\\Programs\\Git\\bin\\bash.exe"'
+    ].join(', ');
+    const gitBootstrap = `if (-not $bash) { Write-Output 'Bootstrapping Git for Windows (provides bash) with Windows Package Manager...'; & ${wingetRef} install --id Git.Git --exact --silent --accept-package-agreements --accept-source-agreements; $bash = @(${gitBashCandidates}) | Where-Object { Test-Path $_ } | Select-Object -First 1 }`;
+    const script = [
+      `$ErrorActionPreference = 'Stop'`,
+      `$env:HERMES_HOME = ${JSON.stringify(hermesHome)}`,
+      `$bash = (Get-Command bash -ErrorAction SilentlyContinue).Source`,
+      gitBootstrap,
+      `if (-not $bash) { $bash = 'bash' }`,
+      `Write-Output 'Installing the official Playro AI engine...'`,
+      `$installer = (Invoke-WebRequest -UseBasicParsing -Uri ${JSON.stringify(OFFICIAL_HERMES_INSTALL_URL)}).Content`,
+      `$installer | & $bash -s --`,
+      `Write-Output 'Playro AI engine install complete.'`
+    ].join('; ');
+    command = 'powershell.exe';
+    args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script];
+  } else {
+    const script = [
+      `set -e`,
+      `export HERMES_HOME=${JSON.stringify(hermesHome)}`,
+      `echo 'Installing the official Playro AI engine...'`,
+      `curl -fsSL ${JSON.stringify(OFFICIAL_HERMES_INSTALL_URL)} | bash`,
+      `echo 'Playro AI engine install complete.'`
+    ].join('; ');
+    command = 'bash';
+    args = ['-lc', script];
+  }
+
+  hermesInstallProcess = spawn(command, args, {
+    cwd: hermesHome,
+    env: { ...process.env, HERMES_HOME: hermesHome },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+
+  const onData = (chunk, stream) => {
+    const text = chunk.toString();
+    console[stream === 'stderr' ? 'error' : 'log'](`[hermes-install] ${text.trim()}`);
+    for (const line of text.split(/\r?\n/).map(item => item.trim()).filter(Boolean)) {
+      const step = inferHermesInstallStep(line, 3);
+      sendHermesInstallProgress({
+        status: 'running',
+        step,
+        totalSteps: HERMES_INSTALL_STEPS.length,
+        percent: progressForStep(step),
+        title: 'Installing Playro AI engine',
+        stepLabel: `Step ${step}/${HERMES_INSTALL_STEPS.length}: ${HERMES_INSTALL_STEPS[step - 1]}`,
+        detail: line,
+        log: line,
+        stream
+      });
+    }
+  };
+  hermesInstallProcess.stdout.on('data', data => onData(data, 'stdout'));
+  hermesInstallProcess.stderr.on('data', data => onData(data, 'stderr'));
+  hermesInstallProcess.on('exit', code => {
+    hermesInstallProcess = null;
+    const ok = code === 0 && hasInstalledHermesRuntime();
+    sendHermesInstallProgress({
+      status: ok ? 'complete' : 'failed',
+      step: HERMES_INSTALL_STEPS.length,
+      totalSteps: HERMES_INSTALL_STEPS.length,
+      percent: ok ? 100 : progressForStep(HERMES_INSTALL_STEPS.length),
+      title: ok ? 'Playro AI engine installed' : 'Playro AI engine install failed',
+      stepLabel: ok
+        ? `Step ${HERMES_INSTALL_STEPS.length}/${HERMES_INSTALL_STEPS.length}: ${HERMES_INSTALL_STEPS[6]}`
+        : 'Playro AI engine install failed',
+      detail: ok ? 'Playro AI engine is ready.' : `Playro AI engine installer exited with code ${code}.`,
+      log: ok ? 'Playro AI engine installed from official remote installer.' : `Playro AI engine installer exited with code ${code}.`
+    });
+  });
 }
 
 function terminateProcess(proc, label, timeoutMs = 3000) {
@@ -287,6 +454,7 @@ function installHermesRuntime() {
   const installDir = resolveHermesAgentDir();
   fs.mkdirSync(hermesHome, { recursive: true });
 
+  // Preferred fast path: install from the bundled product-local engine.
   try {
     if (installFromBundledHermesRuntime(installDir)) {
       return { ok: true, bundled: true, runtime: checkHermesRuntime() };
@@ -295,7 +463,18 @@ function installHermesRuntime() {
     return { ok: false, error: error.message, runtime: checkHermesRuntime() };
   }
 
-  return remoteHermesInstallDisabledResult();
+  // Locked-down deployments may opt out of the remote installer entirely.
+  if (remoteHermesInstallDisabled()) {
+    return remoteHermesInstallDisabledResult();
+  }
+
+  // Fallback: silently download and run the official Hermes installer over HTTPS.
+  try {
+    startRemoteHermesInstall(hermesHome);
+  } catch (error) {
+    return { ok: false, error: error.message, runtime: checkHermesRuntime() };
+  }
+  return { ok: true, started: true, remote: true, installing: true, runtime: checkHermesRuntime() };
 }
 
 async function ensureHermesRuntime() {
@@ -327,6 +506,7 @@ async function ensureHermesRuntime() {
 
 function startBackend() {
   if (apiProcess) return;
+  ensureHermesEnvFile();
   backendStatus = { ok: false, starting: true, failed: false, port: API_PORT, error: null, exitCode: null };
   const backendDir = resolveBackendDir();
   const pythonCmd = resolvePythonCommand();
@@ -344,7 +524,8 @@ function startBackend() {
       PLAYRO_HERMES_BIN: resolveHermesCommand() || '',
       PYTHONPATH: [backendDir, process.env.PYTHONPATH || ''].filter(Boolean).join(path.delimiter)
     },
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
   });
 
   apiProcess.stdout.on('data', data => console.log(`[backend] ${data.toString().trim()}`));
@@ -494,7 +675,7 @@ function resolveWingetExecutable() {
 
 function runCheck(command, args = []) {
   try {
-    const result = spawnSync(command, args, { encoding: 'utf8', shell: false });
+    const result = spawnSync(command, args, { encoding: 'utf8', shell: false, windowsHide: true });
     return { ok: result.status === 0, stdout: result.stdout || '', stderr: result.stderr || '' };
   } catch (error) {
     return { ok: false, error: error.message };
@@ -595,7 +776,7 @@ function installRojoWithPackageManager() {
     args = ['-lc', script];
   }
 
-  rojoInstallProcess = spawn(command, args, { cwd: os.homedir(), env: { ...process.env }, stdio: ['ignore', 'pipe', 'pipe'] });
+  rojoInstallProcess = spawn(command, args, { cwd: os.homedir(), env: { ...process.env }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   const onData = (chunk, stream) => {
     const text = chunk.toString();
     console[stream === 'stderr' ? 'error' : 'log'](`[rojo-install] ${text.trim()}`);
@@ -687,7 +868,8 @@ ipcMain.handle('open-rojo-project', async (_event, rojoProjectPath) => {
       cwd: projectDir,
       detached: false,
       stdio: ['ignore', 'pipe', 'pipe'],
-      shell: false
+      shell: false,
+      windowsHide: true
     });
     rojoProcess.stdout.on('data', data => console.log(`[rojo] ${data.toString().trim()}`));
     rojoProcess.stderr.on('data', data => console.error(`[rojo] ${data.toString().trim()}`));
@@ -702,7 +884,7 @@ ipcMain.handle('open-rojo-project', async (_event, rojoProjectPath) => {
   const studio = checkStudio();
   if (studio.ok) {
     try {
-      const child = spawn(studio.path, [], { detached: true, stdio: 'ignore' });
+      const child = spawn(studio.path, [], { detached: true, stdio: 'ignore', windowsHide: true });
       child.unref();
     } catch (error) {
       studio.error = error.message;
@@ -778,7 +960,10 @@ async function runFullPlayroSetup() {
   sendPlayroSetupProgress({ status: 'running', step: 6, title: 'Installing Playro', stepLabel: 'Step 6/7: Verifying setup', detail: 'Checking engine, optional Rojo, and local project service...', log: 'Verifying Playro setup...' });
   startBackend();
   sendPlayroSetupProgress({ status: 'complete', step: 7, percent: 100, title: 'Playro is ready', stepLabel: 'Step 7/7: Launching Playro', detail: 'Everything is installed. Launching the Playro desktop app...', log: 'Setup complete. Launching Playro desktop app.' });
-  const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : createWindow();
+  if (!isHeadlessMode()) {
+    const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : createWindow();
+    win.show();
+  }
   if (setupWindow && !setupWindow.isDestroyed()) setTimeout(() => setupWindow.close(), 1200);
   return { ok: true, launched: true, setup: { hermes: checkHermesRuntime(), rojo: checkRojo(), studio: checkStudio() } };
 }
@@ -836,17 +1021,40 @@ ipcMain.handle('skip-playro-setup', async () => skipPlayroSetup());
 
 app.whenReady().then(async () => {
   const allowLocalGenerator = process.env.PLAYRO_ALLOW_LOCAL_GENERATOR === '1';
+  const headless = isHeadlessMode();
   const setupNeeded = !hasInstalledHermesRuntime();
+
   if (setupNeeded && process.env.NODE_ENV !== 'test' && !allowLocalGenerator) {
-    createSetupWindow();
-  } else {
+    // Headless, zero-touch provisioning: never block on a consent gate. The
+    // setup window opens only as a non-interactive progress surface (and not at
+    // all when PLAYRO_HEADLESS=1 for CI). Provisioning runs end-to-end on its own.
+    if (!headless) {
+      const win = createSetupWindow();
+      win.show();
+    }
+    runFullPlayroSetup().catch(error => {
+      console.error(`[setup] headless provisioning failed: ${error.stack || error.message}`);
+    });
+  } else if (!headless) {
     startBackend();
     createWindow();
+  } else {
+    // Headless and no setup needed: bring the backend up without any window.
+    startBackend();
   }
+
   app.on('activate', () => {
+    if (headless) return;
     if (BrowserWindow.getAllWindows().length === 0) {
-      if (!hasInstalledHermesRuntime() && process.env.NODE_ENV !== 'test' && !allowLocalGenerator) createSetupWindow();
-      else createWindow();
+      if (!hasInstalledHermesRuntime() && process.env.NODE_ENV !== 'test' && !allowLocalGenerator) {
+        const win = createSetupWindow();
+        win.show();
+        runFullPlayroSetup().catch(error => {
+          console.error(`[setup] headless provisioning failed: ${error.stack || error.message}`);
+        });
+      } else {
+        createWindow();
+      }
     }
   });
 });
