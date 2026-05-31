@@ -22,6 +22,14 @@ from product.roblox_ai_studio.roblox.generator import slugify, write_project
 
 AGENT_DEFAULT_TIMEOUT = int(300)
 HERMES_BIN = "hermes"
+# Marker file written into the bundled engine root by
+# desktop/scripts/prepare-playro-engine-bundle.js. Its presence next to the
+# resolved binary identifies the engine as the product-local `playro` package
+# (whose CLI exposes generate/export, not Hermes `chat`) rather than a real
+# NousResearch Hermes agent.
+PLAYRO_ENGINE_MARKER = "PLAYRO_ENGINE_BUNDLE.txt"
+ENGINE_KIND_PLAYRO = "playro"
+ENGINE_KIND_HERMES = "hermes"
 SAFE_PLAYRO_TOOLSETS = ("file", "skills", "fact_store")
 DENIED_HERMES_TOOLSETS = {"terminal", "cronjob", "session_search", "memory", "todo"}
 TRUTHY_ENV_VALUES = {"1", "true", "yes"}
@@ -166,6 +174,35 @@ def _select_hermes_toolsets() -> str:
     return ",".join(selected)
 
 
+def _detect_engine_kind(hermes_bin: str) -> str:
+    """Classify the resolved engine as the bundled Playro engine or real Hermes.
+
+    The bundled engine is the `playro` console script: its CLI only implements
+    ``generate``/``export`` (there is no ``chat`` subcommand), so issuing
+    ``hermes chat ...`` against it always fails with exit code 2. A real
+    NousResearch Hermes agent exposes ``chat``.
+
+    Detection is filesystem-only (no extra subprocess): the bundle preparation
+    writes ``PLAYRO_ENGINE_BUNDLE.txt`` at the engine root, which travels with
+    the binary into the install directory (``<root>/.venv/Scripts/hermes.exe``).
+    An explicit ``PLAYRO_ENGINE_KIND`` override short-circuits the probe for
+    setups that already know which runtime they installed.
+    """
+
+    override = os.environ.get("PLAYRO_ENGINE_KIND", "").strip().lower()
+    if override in {ENGINE_KIND_PLAYRO, ENGINE_KIND_HERMES}:
+        return override
+
+    bin_path = Path(hermes_bin)
+    # Walk a bounded set of ancestors: marker sits at parents[2] for the
+    # canonical <root>/.venv/Scripts/hermes(.exe) layout, with slack for venv
+    # variants. Bounding avoids matching an unrelated marker far up the tree.
+    for ancestor in bin_path.parents[:4]:
+        if (ancestor / PLAYRO_ENGINE_MARKER).is_file():
+            return ENGINE_KIND_PLAYRO
+    return ENGINE_KIND_HERMES
+
+
 def _playro_hermes_home(product_root: Path) -> Path:
     return product_root / ".playro" / "hermes"
 
@@ -285,8 +322,32 @@ def _run_hermes_agent(
             agent_prompt = _agent_prompt(prompt_text, continuous=False)
 
         toolsets = _select_hermes_toolsets()
+        hermes_bin = _resolve_hermes_bin()
+        engine_kind = _detect_engine_kind(hermes_bin)
+
+        result["engine_kind"] = engine_kind
+        result["memory_mode"] = PRODUCT_MEMORY_MODE
+        result["memory_toolset"] = PRODUCT_MEMORY_TOOLSET
+        result["toolsets"] = toolsets
+
+        if engine_kind == ENGINE_KIND_PLAYRO:
+            # The bundled engine is the `playro` package — its CLI has no `chat`
+            # subcommand, and its `generate` path is the same in-process
+            # deterministic generator that generate_roblox_project()/the API
+            # already ran to produce this project. Re-invoking it would only
+            # duplicate the build, while `hermes chat ...` would fail with exit
+            # 2. Treat the in-process generation as the authoritative output and
+            # skip the subprocess instead of logging a spurious agent failure.
+            result["agent_ran"] = False
+            result["agent_available"] = True
+            result["deterministic_primary"] = True
+            result["fallback_reason"] = (
+                "bundled Playro engine builds in-process; agent chat not applicable"
+            )
+            return result
+
         cmd = [
-            _resolve_hermes_bin(),
+            hermes_bin,
             "chat",
             "-q",
             agent_prompt,
@@ -305,9 +366,6 @@ def _run_hermes_agent(
         )
         result["agent_ran"] = True
         result["agent_exit_code"] = proc.returncode
-        result["memory_mode"] = PRODUCT_MEMORY_MODE
-        result["memory_toolset"] = PRODUCT_MEMORY_TOOLSET
-        result["toolsets"] = toolsets
         output_preview = proc.stdout[-3000:] if len(proc.stdout) > 3000 else proc.stdout
 
         json_match = _extract_json(output_preview)
@@ -379,6 +437,16 @@ def _extract_json(text: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
+def _engine_pipeline_label(agent_result: dict[str, Any]) -> str:
+    """Human-readable label for which engine produced the build."""
+
+    if agent_result.get("agent_ran"):
+        return "Hermes agent"
+    if agent_result.get("deterministic_primary"):
+        return "Playro engine (deterministic)"
+    return "Deterministic fallback"
+
+
 def generate_roblox_project(
     prompt: str,
     *,
@@ -446,8 +514,8 @@ def generate_roblox_project(
             "key": "validate",
             "title": "Validate artifacts",
             "detail": (
-                f"All expected files confirmed. Agent pipeline: "
-                f"{'Hermes' if agent_result.get('agent_ran') else 'Deterministic fallback'}."
+                f"All expected files confirmed. Build engine: "
+                f"{_engine_pipeline_label(agent_result)}."
             ),
             "status": "done",
             "duration_ms": int(elapsed * 0.15 * 1000),
@@ -489,6 +557,8 @@ def generate_roblox_project(
                 agent_result.get("agent_ran") or agent_result.get("agent_available")
             ),
             "ran": agent_result.get("agent_ran", False),
+            "engine_kind": agent_result.get("engine_kind"),
+            "deterministic_primary": agent_result.get("deterministic_primary", False),
             "summary": agent_result.get("agent_summary", "")[:500],
             "structured": agent_result.get("structured_output"),
             "exit_code": agent_result.get("agent_exit_code"),
