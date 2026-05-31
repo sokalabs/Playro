@@ -83,7 +83,11 @@ const checks = [
     lacks('renderer', 'await installHermesRuntime();') &&
     has('preload', 'installHermesRuntime', 'installRojo') &&
     has('main', 'ensureHermesRuntime', 'createSetupWindow', 'runFullPlayroSetup', 'setup_required', 'PLAYRO_ALLOW_LOCAL_GENERATOR', 'local generator fallback', 'remoteHermesInstallDisabledResult', 'Remote installer execution is disabled', 'resolveBundledHermesAgentDir') &&
-    lacks('main', 'install.ps1', 'install.sh', 'raw.githubusercontent.com/NousResearch/hermes-agent') &&
+    // Remote installer must stay opt-in and OFF by default: the enable flag gates
+    // it, and the legacy opt-OUT default (which ran the installer unless disabled)
+    // must be gone so no remote code runs on the default install path.
+    has('main', 'remoteHermesInstallEnabled', "process.env.PLAYRO_ENABLE_REMOTE_HERMES_INSTALL === '1'") &&
+    lacks('main', 'PLAYRO_DISABLE_REMOTE_HERMES_INSTALL', 'remoteHermesInstallDisabled()') &&
     lacks('main', 'Continue with local generator', 'Complete required Playro setup', "buttons: ['Open setup', 'Quit Playro']", 'dialog.showMessageBox')
   ),
   check('Hermes Desktop-style installer overlay', has('renderer', 'renderHermesInstallerOverlay', 'Installing Playro AI engine', 'Step 1/7: Starting installation', 'installer-progress-fill') && has('css', '.hermes-installer-modal', '.installer-log') && has('preload', 'onHermesInstallProgress')),
