@@ -1,10 +1,10 @@
 # Playro
 
+> **Status: Archived.** Built to test whether plain-English prompts could generate ready-to-use Roblox games. The prototype validated that the idea wasn't worth pursuing — the platform owner (Roblox) ships this natively, and reliable generate→playtest→repair is the real bottleneck and lives inside Roblox's runtime. Kept public as a learning artifact; not maintained.
+
 Playro is an open-source, desktop-first Roblox game builder. The desktop app turns a plain-language game idea into a Rojo-ready Roblox project with a build plan, manifest, Luau scripts, and handoff files for Roblox Studio.
 
 The project uses a product-local Hermes agent backend as the runtime foundation for planning, generation, validation, and refinement. The visible product is the Roblox builder experience; the CLI and API are support layers for testing, automation, and desktop integration.
-
-> Status: early public prototype. Expect rough edges, incomplete integrations, and fast-moving APIs.
 
 ## What it does
 
