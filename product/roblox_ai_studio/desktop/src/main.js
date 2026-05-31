@@ -291,35 +291,22 @@ function checkHermesRuntime() {
   };
 }
 
-// Pinned, official Hermes installer. Never execute arbitrary or user-supplied
-// URLs here — this URL is the only remote installer Playro will run. It is
-// assembled from constant fragments (host/org/repo/branch/script) so the pin is
-// auditable and cannot be redirected by configuration or user input.
-const OFFICIAL_HERMES_INSTALL_HOST = 'https://raw.githubusercontent.com';
-const OFFICIAL_HERMES_INSTALL_REPO = ['NousResearch', 'hermes-agent'].join('/');
-const OFFICIAL_HERMES_INSTALL_BRANCH = 'main';
-const OFFICIAL_HERMES_INSTALL_SCRIPT = ['scripts', ['install', 'sh'].join('.')].join('/');
-const OFFICIAL_HERMES_INSTALL_URL = [
-  OFFICIAL_HERMES_INSTALL_HOST,
-  OFFICIAL_HERMES_INSTALL_REPO,
-  OFFICIAL_HERMES_INSTALL_BRANCH,
-  OFFICIAL_HERMES_INSTALL_SCRIPT
-].join('/');
-// Windows uses the official native PowerShell installer; the bash install.sh
+// Pinned, official Hermes installer URLs. These are the ONLY remote installers
+// Playro will ever run, and only when explicitly enabled (see
+// remoteHermesInstallEnabled below). Each URL is a plain constant so the pin is
+// auditable at a glance and cannot be redirected by configuration or user input.
+const OFFICIAL_HERMES_INSTALL_URL = 'https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh';
+// Windows uses the official native PowerShell installer; the bash installer
 // deliberately rejects Windows (CYGWIN/MINGW/MSYS) and points callers here.
-const OFFICIAL_HERMES_INSTALL_SCRIPT_WINDOWS = ['scripts', ['install', 'ps1'].join('.')].join('/');
-const OFFICIAL_HERMES_INSTALL_URL_WINDOWS = [
-  OFFICIAL_HERMES_INSTALL_HOST,
-  OFFICIAL_HERMES_INSTALL_REPO,
-  OFFICIAL_HERMES_INSTALL_BRANCH,
-  OFFICIAL_HERMES_INSTALL_SCRIPT_WINDOWS
-].join('/');
+const OFFICIAL_HERMES_INSTALL_URL_WINDOWS = 'https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1';
 
-// Opt-out escape hatch for locked-down deployments: when
-// PLAYRO_DISABLE_REMOTE_HERMES_INSTALL=1, the remote installer fallback is
-// skipped and the engine must be supplied as a trusted product-local bundle.
-function remoteHermesInstallDisabled() {
-  return process.env.PLAYRO_DISABLE_REMOTE_HERMES_INSTALL === '1';
+// The remote installer is OFF by default. It runs ONLY when an operator
+// explicitly opts in with PLAYRO_ENABLE_REMOTE_HERMES_INSTALL=1. Without that
+// flag Playro never downloads or executes a remote install script — it returns
+// the disabled result and falls back to the local generator, so the default
+// install path is free of any silent remote code execution.
+function remoteHermesInstallEnabled() {
+  return process.env.PLAYRO_ENABLE_REMOTE_HERMES_INSTALL === '1';
 }
 
 function remoteHermesInstallDisabledResult() {
@@ -465,12 +452,14 @@ function installHermesRuntime() {
     return { ok: false, error: error.message, runtime: checkHermesRuntime() };
   }
 
-  // Locked-down deployments may opt out of the remote installer entirely.
-  if (remoteHermesInstallDisabled()) {
+  // Remote installer is opt-in only and OFF by default. Unless an operator
+  // explicitly enabled it, never download or execute a remote script — report
+  // the disabled result so callers fall back to the local generator.
+  if (!remoteHermesInstallEnabled()) {
     return remoteHermesInstallDisabledResult();
   }
 
-  // Fallback: silently download and run the official Hermes installer over HTTPS.
+  // Operator opted in: download and run the pinned official Hermes installer.
   try {
     startRemoteHermesInstall(hermesHome);
   } catch (error) {
@@ -1027,16 +1016,19 @@ app.whenReady().then(async () => {
   const setupNeeded = !hasInstalledHermesRuntime();
 
   if (setupNeeded && process.env.NODE_ENV !== 'test' && !allowLocalGenerator) {
-    // Headless, zero-touch provisioning: never block on a consent gate. The
-    // setup window opens only as a non-interactive progress surface (and not at
-    // all when PLAYRO_HEADLESS=1 for CI). Provisioning runs end-to-end on its own.
-    if (!headless) {
-      const win = createSetupWindow();
-      win.show();
+    if (headless) {
+      // CI/headless only: no window. Provisioning runs end-to-end on its own.
+      // The remote installer stays opt-in (off by default), so this never
+      // executes remote code unless an operator explicitly enabled it.
+      runFullPlayroSetup().catch(error => {
+        console.error(`[setup] headless provisioning failed: ${error.stack || error.message}`);
+      });
+    } else {
+      // First-launch consent gate: open the setup window and let the user drive
+      // provisioning over IPC (start-full-setup). Main never auto-runs setup or
+      // any installer unprompted.
+      createSetupWindow();
     }
-    runFullPlayroSetup().catch(error => {
-      console.error(`[setup] headless provisioning failed: ${error.stack || error.message}`);
-    });
   } else if (!headless) {
     startBackend();
     createWindow();
@@ -1049,11 +1041,7 @@ app.whenReady().then(async () => {
     if (headless) return;
     if (BrowserWindow.getAllWindows().length === 0) {
       if (!hasInstalledHermesRuntime() && process.env.NODE_ENV !== 'test' && !allowLocalGenerator) {
-        const win = createSetupWindow();
-        win.show();
-        runFullPlayroSetup().catch(error => {
-          console.error(`[setup] headless provisioning failed: ${error.stack || error.message}`);
-        });
+        createSetupWindow();
       } else {
         createWindow();
       }
