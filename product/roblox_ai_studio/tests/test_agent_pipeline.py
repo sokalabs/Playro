@@ -263,6 +263,124 @@ def test_resolve_hermes_bin_ignores_live_hermes_home_without_dev_opt_in(monkeypa
     assert str(live_home) not in resolved
 
 
+def _make_bundled_engine_bin(tmp_path: Path) -> Path:
+    """Build the bundled-engine layout (<root>/.venv/Scripts/hermes) with marker."""
+
+    agent_root = tmp_path / "hermes-agent"
+    bin_dir = agent_root / ".venv" / ("Scripts" if os.name == "nt" else "bin")
+    bin_dir.mkdir(parents=True)
+    hermes_bin = bin_dir / ("hermes.exe" if os.name == "nt" else "hermes")
+    hermes_bin.write_text("", encoding="utf-8")
+    (agent_root / ap.PLAYRO_ENGINE_MARKER).write_text("Playro engine bundle\n", encoding="utf-8")
+    return hermes_bin
+
+
+def test_detect_engine_kind_identifies_bundled_playro_engine(tmp_path):
+    hermes_bin = _make_bundled_engine_bin(tmp_path)
+
+    assert ap._detect_engine_kind(str(hermes_bin)) == "playro"
+
+
+def test_detect_engine_kind_defaults_to_hermes_without_marker(tmp_path):
+    hermes_bin = tmp_path / ("hermes.exe" if os.name == "nt" else "hermes")
+    hermes_bin.write_text("", encoding="utf-8")
+
+    assert ap._detect_engine_kind(str(hermes_bin)) == "hermes"
+
+
+def test_detect_engine_kind_honors_explicit_override(monkeypatch, tmp_path):
+    bundled = _make_bundled_engine_bin(tmp_path)
+
+    monkeypatch.setenv("PLAYRO_ENGINE_KIND", "hermes")
+    assert ap._detect_engine_kind(str(bundled)) == "hermes"
+
+    plain = tmp_path / "plain-hermes"
+    plain.write_text("", encoding="utf-8")
+    monkeypatch.setenv("PLAYRO_ENGINE_KIND", "playro")
+    assert ap._detect_engine_kind(str(plain)) == "playro"
+
+
+def test_bundled_playro_engine_skips_chat_and_marks_deterministic_primary(monkeypatch, tmp_path):
+    hermes_bin = _make_bundled_engine_bin(tmp_path)
+    calls = []
+
+    def fake_run(cmd, **kwargs):  # pragma: no cover - must never be reached
+        calls.append(cmd)
+        raise AssertionError("bundled Playro engine must not spawn `hermes chat`")
+
+    monkeypatch.setattr(ap, "_resolve_hermes_bin", lambda: str(hermes_bin))
+    monkeypatch.setattr(ap.HermesRobloxSession, "local", lambda project_root: ap.HermesRobloxSession(project_root=project_root))
+    monkeypatch.setattr(ap.subprocess, "run", fake_run)
+
+    result = ap._run_hermes_agent("make a safe obby", timeout=1)
+
+    assert calls == []
+    assert result["engine_kind"] == "playro"
+    assert result["agent_ran"] is False
+    assert result["agent_available"] is True
+    assert result["deterministic_primary"] is True
+    assert result["toolsets"] == "file,skills,fact_store"
+    assert "chat not applicable" in result["fallback_reason"]
+
+
+def test_bundled_engine_via_path_fallback_is_resolved_before_detection(monkeypatch, tmp_path):
+    # _resolve_hermes_bin returns the bare command under the PATH opt-in; the
+    # real binary still lives in a bundled layout and must be classified by its
+    # resolved absolute path, not the bare "hermes" string.
+    hermes_bin = _make_bundled_engine_bin(tmp_path)
+    calls = []
+
+    def fake_run(cmd, **kwargs):  # pragma: no cover - must never be reached
+        calls.append(cmd)
+        raise AssertionError("bundled Playro engine must not spawn `hermes chat`")
+
+    monkeypatch.setattr(ap, "_resolve_hermes_bin", lambda: ap.HERMES_BIN)
+    monkeypatch.setattr(ap.shutil, "which", lambda name: str(hermes_bin))
+    monkeypatch.setattr(ap.HermesRobloxSession, "local", lambda project_root: ap.HermesRobloxSession(project_root=project_root))
+    monkeypatch.setattr(ap.subprocess, "run", fake_run)
+
+    result = ap._run_hermes_agent("make a safe obby", timeout=1)
+
+    assert calls == []
+    assert result["engine_kind"] == "playro"
+    assert result["deterministic_primary"] is True
+
+
+def test_real_hermes_engine_still_runs_chat(monkeypatch, tmp_path):
+    hermes_bin = tmp_path / ("hermes.exe" if os.name == "nt" else "hermes")
+    hermes_bin.write_text("", encoding="utf-8")
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+
+        class Result:
+            returncode = 0
+            stdout = '{"title": "Test", "files": []}'
+
+        return Result()
+
+    monkeypatch.setattr(ap, "_resolve_hermes_bin", lambda: str(hermes_bin))
+    monkeypatch.setattr(ap.HermesRobloxSession, "local", lambda project_root: ap.HermesRobloxSession(project_root=project_root))
+    monkeypatch.setattr(ap.subprocess, "run", fake_run)
+
+    result = ap._run_hermes_agent("make a safe obby", timeout=1)
+
+    assert result["engine_kind"] == "hermes"
+    assert result["agent_ran"] is True
+    assert len(calls) == 1
+    assert calls[0][1] == "chat"
+
+
+def test_engine_pipeline_label_distinguishes_primary_from_fallback():
+    assert ap._engine_pipeline_label({"agent_ran": True}) == "Hermes agent"
+    assert (
+        ap._engine_pipeline_label({"agent_ran": False, "deterministic_primary": True})
+        == "Playro engine (deterministic)"
+    )
+    assert ap._engine_pipeline_label({"agent_ran": False}) == "Deterministic fallback"
+
+
 def test_hermes_agent_redacts_stdout_summary_and_structured_output(monkeypatch, tmp_path):
     aws_key = "AKIA" + "IOSFODNN7EXAMPLE"
 
