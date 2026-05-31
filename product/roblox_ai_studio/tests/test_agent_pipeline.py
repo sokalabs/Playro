@@ -323,6 +323,29 @@ def test_bundled_playro_engine_skips_chat_and_marks_deterministic_primary(monkey
     assert "chat not applicable" in result["fallback_reason"]
 
 
+def test_bundled_engine_via_path_fallback_is_resolved_before_detection(monkeypatch, tmp_path):
+    # _resolve_hermes_bin returns the bare command under the PATH opt-in; the
+    # real binary still lives in a bundled layout and must be classified by its
+    # resolved absolute path, not the bare "hermes" string.
+    hermes_bin = _make_bundled_engine_bin(tmp_path)
+    calls = []
+
+    def fake_run(cmd, **kwargs):  # pragma: no cover - must never be reached
+        calls.append(cmd)
+        raise AssertionError("bundled Playro engine must not spawn `hermes chat`")
+
+    monkeypatch.setattr(ap, "_resolve_hermes_bin", lambda: ap.HERMES_BIN)
+    monkeypatch.setattr(ap.shutil, "which", lambda name: str(hermes_bin))
+    monkeypatch.setattr(ap.HermesRobloxSession, "local", lambda project_root: ap.HermesRobloxSession(project_root=project_root))
+    monkeypatch.setattr(ap.subprocess, "run", fake_run)
+
+    result = ap._run_hermes_agent("make a safe obby", timeout=1)
+
+    assert calls == []
+    assert result["engine_kind"] == "playro"
+    assert result["deterministic_primary"] is True
+
+
 def test_real_hermes_engine_still_runs_chat(monkeypatch, tmp_path):
     hermes_bin = tmp_path / ("hermes.exe" if os.name == "nt" else "hermes")
     hermes_bin.write_text("", encoding="utf-8")

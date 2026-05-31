@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -323,6 +324,11 @@ def _run_hermes_agent(
 
         toolsets = _select_hermes_toolsets()
         hermes_bin = _resolve_hermes_bin()
+        # When the PATH fallback returns the bare command, resolve it to an
+        # absolute path first so marker detection can inspect the real binary's
+        # ancestry (and so we launch the same executable we classified).
+        if hermes_bin == HERMES_BIN:
+            hermes_bin = shutil.which(hermes_bin) or hermes_bin
         engine_kind = _detect_engine_kind(hermes_bin)
 
         result["engine_kind"] = engine_kind
