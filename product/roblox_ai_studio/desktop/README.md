@@ -9,7 +9,7 @@ First launch on Windows is now **fully automatic and headless**. There is no con
 What happens on first launch:
 
 - **Bundled engine first.** Provisioning prefers the product-local Playro AI Engine staged under `vendor/playro-engine/` and packaged into `resources/playro-engine/`. When present, it is copied into the product-local app-data engine home (`~/.playro/hermes`, or `%LOCALAPPDATA%\playro\hermes` on Windows) with no network access.
-- **Official Hermes installer fallback.** When no bundled engine is present, provisioning now falls back to running the **official Hermes install script** silently. This pulls Git, uv, and Python 3.11+ into the Hermes home (`~/.playro/hermes`) so the engine can run.
+- **Local generator fallback by default.** When no bundled engine is present, provisioning falls back to the packaged local Roblox generator — it does **not** download or run any remote installer. An operator can opt in to the official Hermes remote installer (see the Security note) to instead pull Git, uv, and Python 3.11+ into the Hermes home (`~/.playro/hermes`).
 - **Hidden console windows.** Every child process Playro spawns during provisioning (the installer, Rojo install, the backend) is launched with `windowsHide` so no terminal flashes or lingers on screen.
 - **Programmatic env.** Required environment is written programmatically to `~/.playro/hermes/.env`; the user never has to edit a file by hand.
 
@@ -19,18 +19,20 @@ The IPC contract is unchanged: `check-setup`, `install-hermes-runtime`, `prompt-
 
 - `PLAYRO_HEADLESS=1` — suppress all spawned windows (used for CI and unattended runs).
 - `PLAYRO_ALLOW_LOCAL_GENERATOR=1` — skip engine provisioning and use the packaged local Roblox generator fallback (intended for dev/test).
+- `PLAYRO_ENABLE_REMOTE_HERMES_INSTALL=1` — opt in to the official Hermes remote installer fallback. **Off by default**; when unset, Playro never downloads or executes a remote install script (see the Security note).
 
 ### Security note
 
-Remote installer execution — which earlier builds **disabled** — is now **ENABLED** as a fallback path. When no trusted product-local engine bundle is present, Playro runs the official Hermes install script to provision Git/uv/Python.
+Remote installer execution is **disabled by default** and **opt-in only**. When no trusted product-local engine bundle is present, Playro uses the local generator fallback and never downloads or runs a remote script. Only when an operator explicitly sets `PLAYRO_ENABLE_REMOTE_HERMES_INSTALL=1` does Playro run the official Hermes install script to provision Git/uv/Python.
 
-Honest tradeoffs:
+Honest tradeoffs (apply only when the opt-in flag is set):
 
 - The installer source is pinned to the **official Hermes installer** and fetched over **HTTPS**. Playro does not execute an arbitrary or user-supplied install URL.
-- The bundled product-local engine is always preferred; the remote installer only runs when no bundle is present.
+- The bundled product-local engine is always preferred; the remote installer only runs when no bundle is present **and** the opt-in flag is set.
+- Main never runs the installer unprompted — the remote path is reachable only through the explicit opt-in.
 - The existing loopback hardening is unchanged: the backend binds to `127.0.0.1:8765`, every API call carries the per-session loopback API token (`PLAYRO_API_TOKEN`), and the origin allowlist (`PLAYRO_ALLOWED_ORIGINS`) remains in force.
 
-If you require a no-remote-execution posture, ship a build with the product-local engine bundle populated (`npm run prepare:engine-bundle`) so the fallback never triggers.
+The default build therefore has a no-remote-execution posture out of the box. Ship a build with the product-local engine bundle populated (`npm run prepare:engine-bundle`) to provide the full engine offline as well.
 
 ## Local checks
 

@@ -59,7 +59,7 @@ First-launch provisioning is **fully automatic and headless** — there is no co
 Test-Path "$env:LOCALAPPDATA\playro\hermes\.env"
 ```
 
-> Provisioning prefers the bundled product-local Playro AI Engine. If a build ships **without** the bundle, provisioning silently falls back to the official Hermes install script (over HTTPS) to pull Git/uv/Python 3.11+ into the engine home. See the **Security note** below.
+> Provisioning prefers the bundled product-local Playro AI Engine. If a build ships **without** the bundle, provisioning falls back to the packaged local Roblox generator and runs **no** remote installer. The official Hermes remote installer is opt-in only — it runs (over HTTPS) to pull Git/uv/Python 3.11+ into the engine home **only** when an operator sets `PLAYRO_ENABLE_REMOTE_HERMES_INSTALL=1`. See the **Security note** below.
 
 ### 3. Backend auto-start
 
@@ -159,6 +159,7 @@ For unattended acceptance runs, set the environment flags before launch:
 
 - `PLAYRO_HEADLESS=1` — suppress all spawned windows (use for CI; prevents any provisioning UI from blocking an automated run).
 - `PLAYRO_ALLOW_LOCAL_GENERATOR=1` — skip engine provisioning and use the packaged local Roblox generator fallback (dev/test only; not a substitute for validating the real engine path).
+- `PLAYRO_ENABLE_REMOTE_HERMES_INSTALL=1` — opt in to the official Hermes remote installer fallback. Off by default; leave unset to keep a no-remote-execution posture.
 
 The automated acceptance smoke is:
 
@@ -168,12 +169,12 @@ npm run smoke:windows-acceptance
 
 ## Security note
 
-Remote installer execution — which earlier builds **disabled** — is now **ENABLED** as a provisioning fallback. When a build ships **without** the bundled product-local Playro AI Engine, first-launch provisioning silently runs the official Hermes install script to pull Git/uv/Python 3.11+ into `~/.playro/hermes`.
+Remote installer execution is **disabled by default** and **opt-in only**. When a build ships **without** the bundled product-local Playro AI Engine, first-launch provisioning uses the packaged local Roblox generator and runs **no** remote script. Only when an operator explicitly sets `PLAYRO_ENABLE_REMOTE_HERMES_INSTALL=1` does Playro run the official Hermes install script (over HTTPS) to pull Git/uv/Python 3.11+ into `~/.playro/hermes`.
 
-What is and is not trusted:
+What is and is not trusted (when the opt-in flag is set):
 
 - The installer source is pinned to the **official Hermes installer** and fetched over **HTTPS**. Playro does not run an arbitrary or user-supplied install URL.
-- The bundled engine is always preferred; the remote fallback only runs when no bundle is present.
+- The bundled engine is always preferred; the remote fallback only runs when no bundle is present **and** the opt-in flag is set.
 - Loopback hardening is unchanged: the backend binds to `127.0.0.1:8765`, every API call carries the per-session loopback API token, and the origin allowlist remains in force.
 
-To validate a no-remote-execution posture, test a build whose `vendor/playro-engine/` bundle was populated (`npm run prepare:engine-bundle`) so the fallback never triggers, and confirm provisioning completes with networking disabled.
+The default build has a no-remote-execution posture out of the box (the flag is unset). To additionally validate full offline provisioning, test a build whose `vendor/playro-engine/` bundle was populated (`npm run prepare:engine-bundle`) and confirm provisioning completes with networking disabled.
